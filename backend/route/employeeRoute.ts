@@ -6,12 +6,12 @@ import {
   getDocuments,
 } from '../controller/employeeController.js';
 
-import { authenticate, authorizeEmployee } from '../middleware/authMiddleware.js';
+import { checkToken, checkRole } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authenticate, authorizeEmployee);
+// All routes require the user to be authenticated and have the 'employee' role
+router.use(checkToken, checkRole(['employee']));
 
 // GET employee profile
 router.get('/:id', getProfile);

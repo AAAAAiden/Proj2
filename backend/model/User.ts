@@ -1,33 +1,29 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 
-export interface IUser extends Document {
+// Raw user fields
+export interface IUser {
   username: string;
   email: string;
   password: string;
   role: 'employee' | 'hr';
 }
 
-const UserSchema: Schema = new Schema<IUser>({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
+// Mongoose document version
+export interface IUserDocument extends IUser, Document {
+  _id: string; // This is KEY to fix your ._id typing issue
+}
+
+const UserSchema = new Schema<IUserDocument>({
+  username: { type: String, required: true, unique: true },
   email: {
     type: String,
     required: true,
     unique: true,
     match: [/.+@.+\..+/, 'Please enter a valid email address'],
   },
-  password: {
-    type: String,
-    required: true,
-  },
-  role: {
-    type: String,
-    enum: ['employee', 'hr'],
-    default: 'employee',
-  },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['employee', 'hr'], default: 'employee' },
 });
 
-export default mongoose.model<IUser>('User', UserSchema);
+const User = model<IUserDocument>('User', UserSchema);
+export default User;

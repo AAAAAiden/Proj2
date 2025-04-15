@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { authenticate, authorizeHR } from '../middleware/authMiddleware.js';
+import { checkToken, checkRole } from '../middleware/authMiddleware.js';
 
 // Employee controller
 import {
-  getProfile as getEmployeeById, // Alias to match HR intent
+  getProfile as getEmployeeById,
 } from '../controller/employeeController.js';
 
 // Visa controller
@@ -22,8 +22,8 @@ import {
 
 const router = Router();
 
-// 🔐 HR-authenticated routes only
-router.use(authenticate, authorizeHR);
+// 🔐 HR-only routes
+router.use(checkToken, checkRole(['hr']));
 
 /** ─────────────── HR Employee Profile Management ─────────────── */
 

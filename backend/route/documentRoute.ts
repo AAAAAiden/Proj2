@@ -1,20 +1,12 @@
-import { Router } from 'express';
-import multer from 'multer';
-import {
-  uploadDocument,
-  listDocuments,
-  previewDocument,
-  downloadDocument,
-} from '../controller/documentController.js';
-import { authenticate } from '../middleware/authMiddleware.js';
+import express from 'express';
+import { uploadDocument, downloadDocument, previewDocument, listDocuments } from '../controller/documentController.js';
+import { checkToken, checkRole } from '../middleware/authMiddleware.js';
 
-const router = Router();
-const upload = multer({ dest: 'uploads/' });
+const router = express.Router();
 
-router.use(authenticate);
-router.post('/upload', upload.single('file'), uploadDocument);
-router.get('/:userId', listDocuments);
-router.get('/preview/:id', previewDocument);
-router.get('/download/:id', downloadDocument);
+router.post('/upload', checkToken, checkRole(['employee']), uploadDocument);
+router.get('/list', checkToken, checkRole(['employee', 'hr']), listDocuments); // ✅ corrected
+router.get('/preview/:docId', checkToken, checkRole(['employee', 'hr']), previewDocument);
+router.get('/download/:docId', checkToken, checkRole(['employee', 'hr']), downloadDocument);
 
 export default router;

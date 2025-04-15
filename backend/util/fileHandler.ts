@@ -1,30 +1,41 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { promisify } from 'util';
+import { Router } from 'express';
+import multer from 'multer';
+import {
+  getVisaStatus,
+  uploadOPTReceipt,
+  uploadOPTEAD,
+  uploadI983,
+  uploadI20,
+  reviewDocument,
+} from '../controller/visaController.js';
 
-const unlinkAsync = promisify(fs.unlink);
+import { checkToken, checkRole } from '../middleware/authMiddleware.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const router = Router();
+const upload = multer({ dest: 'uploads/' });
 
-/**
- * Delete a local file by path.
- */
-export const deleteFile = async (filePath: string): Promise<void> => {
-  try {
-    if (fs.existsSync(filePath)) {
-      await unlinkAsync(filePath);
-      console.log(`🗑️ Deleted file: ${filePath}`);
-    }
-  } catch (error) {
-    console.error(`❌ Error deleting file ${filePath}:`, error);
-  }
-};
+/** ─────────────── Employee Routes ─────────────── **/
 
-/**
- * Resolve absolute path from relative upload location.
- */
-export const resolveUploadPath = (relativePath: string): string => {
-  return path.resolve(__dirname, '..', '..', relativePath);
-};
+router.use(checkToken, checkRole(['employee']));
+
+// GET: visa status for current user
+router.get('/status', getVisaStatus);
+
+// POST: upload OPT receipt
+router.post('/upload/opt-receipt', upload.single('file'), uploadOPTReceipt);
+
+// POST: upload OPT EAD
+router.post('/upload/opt-ead', upload.single('file'), uploadOPTEAD);
+
+// POST: upload I-983
+router.post('/upload/i983', upload.single('file'), uploadI983);
+
+// POST: upload I-20
+router.post('/upload/i20', upload.single('file'), uploadI20);
+
+/** ─────────────── HR Route ─────────────── **/
+
+// HR-only access to review documents
+router.put('/review', checkToken, checkRole(['hr']), reviewDocument);
+
+export default router;

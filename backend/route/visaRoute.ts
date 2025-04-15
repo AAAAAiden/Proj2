@@ -9,18 +9,17 @@ import {
   reviewDocument,
 } from '../controller/visaController.js';
 
-import { authenticate, authorizeEmployee, authorizeHR } from '../middleware/authMiddleware.js';
+import { checkToken, checkRole } from '../middleware/authMiddleware.js';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
 
-// ─────────────── Employee Routes ───────────────
+/** ─────────────── Employee Routes ─────────────── **/
 
-// All employee routes require auth
-router.use(authenticate, authorizeEmployee);
+router.use(checkToken, checkRole(['employee']));
 
-// GET: visa status
-router.get('/:userId', getVisaStatus);
+// GET: visa status for current user
+router.get('/status', getVisaStatus);
 
 // POST: upload OPT receipt
 router.post('/upload/opt-receipt', upload.single('file'), uploadOPTReceipt);
@@ -34,8 +33,9 @@ router.post('/upload/i983', upload.single('file'), uploadI983);
 // POST: upload I-20
 router.post('/upload/i20', upload.single('file'), uploadI20);
 
-// ─────────────── HR Review Route ───────────────
+/** ─────────────── HR Route ─────────────── **/
 
-router.put('/review', authenticate, authorizeHR, reviewDocument);
+// HR-only access to review documents
+router.put('/review', checkToken, checkRole(['hr']), reviewDocument);
 
 export default router;
