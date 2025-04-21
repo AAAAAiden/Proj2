@@ -25,6 +25,7 @@ export const submitOnboarding = async (req: Request, res: Response): Promise<any
 
     res.status(201).json({ message: 'Application submitted', application: newApp });
   } catch (error) {
+    console.error("❌ Submit error:", error);
     res.status(500).json({ message: 'Failed to submit application', error });
   }
 };
@@ -134,18 +135,45 @@ export const viewApplication = async (req: Request, res: Response): Promise<any>
 
 
 // HR: Generate registration token and send email
-export const generateRegistrationToken = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { email } = req.body;
-  
-      const token = uuidv4();
-      const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000); // 3 hours
-  
-      await Token.create({ email, token, expiresAt, used: false });
-      await sendRegistrationEmail(email, token);
-  
-      res.status(201).json({ message: 'Registration token sent', token });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to send token', error });
+export const generateRegistrationToken = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { name, email } = req.body;
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Name and email are required' });
     }
-  };
+
+    const token = uuidv4();
+    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000); // 3 hours
+
+    await Token.create({ name, email, token, expiresAt, used: false });
+    await sendRegistrationEmail(email, token);
+    res.status(201).json({ message: 'Registration token sent', token });
+  } catch (error: any) {
+    console.error('Error generating token:', error.message);
+    res.status(500).json({ message: 'Failed to send token', error: error.message });
+  }
+};
+
+export const listRegistrationTokens = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const tokens = await Token.find()
+      .sort({ createdAt: -1 }) 
+      .lean();
+
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+    const formatted = tokens.map((tokenDoc) => ({
+      name: tokenDoc.name,
+      email: tokenDoc.email,
+      token: tokenDoc.token,
+      status: tokenDoc.used ? 'used' : 'unused',
+      createdAt: tokenDoc.createdAt.toISOString(),
+      registrationLink: `${clientUrl}/register?token=${tokenDoc.token}`,
+    }));
+
+    res.json(formatted);
+  } catch (error: any) {
+    console.error('Error fetching registration tokens:', error.message);
+    res.status(500).json({ message: 'Failed to fetch token history' });
+  }
+};

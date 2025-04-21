@@ -17,7 +17,8 @@ import {
   viewApplication,
   approveOnboarding,
   rejectOnboarding,
-  generateRegistrationToken
+  generateRegistrationToken,
+  listRegistrationTokens
 } from '../controller/onboardingController.js';
 
 const router = Router();
@@ -39,6 +40,7 @@ router.put('/visas/review', reviewDocument);
 
 // POST: generate onboarding token + send email
 router.post('/hiring/token', generateRegistrationToken);
+router.get('/hiring/token', listRegistrationTokens);
 
 // GET: list onboarding apps by status
 router.get('/hiring/applications/:status', listApplicationsByStatus);
