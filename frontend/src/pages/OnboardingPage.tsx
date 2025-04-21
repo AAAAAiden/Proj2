@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import { useNavigate } from 'react-router-dom';
-import { Collapse, Typography, Tag, Button } from 'antd';
+import { Collapse, Typography, Tag } from 'antd';
 import PersonalInfoForm from '../components/PersonalInfoForm';
 import { PersonalInfo } from '../types';
 import axios from 'axios';
-import { setForm } from '../store/onboardingSlice.ts'; // assuming you have this slice
+import { setForm } from '../store/onboardingSlice.ts';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -56,7 +56,6 @@ const OnboardingPage: React.FC = () => {
     },
     documents: [],
   });
-
   useEffect(() => {
     if (role !== 'employee') {
       navigate('/signin');
@@ -83,13 +82,16 @@ const OnboardingPage: React.FC = () => {
 
   const handleSubmit = async (data: PersonalInfo) => {
     try {
-      await axios.post('http://localhost:5001/api/onboarding/submit', 
-      {
-        userId: userId,
-        formData: data
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.post(
+        'http://localhost:5001/api/onboarding/submit',
+        {
+          userId: userId,
+          formData: data,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       dispatch(setForm(data));
       setStatus('pending');
     } catch (err) {
@@ -102,21 +104,24 @@ const OnboardingPage: React.FC = () => {
       <Title level={3}>Applicant: {username}</Title>
       <div className="mb-4">
         <Text strong>Status: </Text>
-        <Tag color={status === 'never submitted' ? 'gray' : status === 'pending' ? 'orange' : status === 'rejected' ? 'red' : 'green'}>
+        <Tag
+          color={
+            status === 'never submitted'
+              ? 'gray'
+              : status === 'pending'
+              ? 'orange'
+              : status === 'rejected'
+              ? 'red'
+              : 'green'
+          }
+        >
           {status}
         </Tag>
       </div>
 
       <Collapse defaultActiveKey={['1']}>
         <Panel header="Onboarding Application" key="1">
-          <PersonalInfoForm initialData={initialData} onSubmit={() => {}} />
-          <Button
-            type="primary"
-            className="mt-4"
-            onClick={() => handleSubmit(initialData)}
-          >
-            Submit Application
-          </Button>
+          <PersonalInfoForm initialData={initialData} onSubmit={handleSubmit} />
         </Panel>
       </Collapse>
     </div>

@@ -1,5 +1,5 @@
 // src/components/PersonalInfoForm.tsx
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import {
   PersonalInfo,
   NameInfo,
@@ -18,6 +18,9 @@ interface Props {
 export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
   const [draft, setDraft] = useState<PersonalInfo>(initialData);
   const [isEditing, setIsEditing] = useState(false);
+  useEffect(() => {
+    setDraft(initialData);
+  }, [initialData]);
 
   const startEdit = () => {
     setDraft(initialData);

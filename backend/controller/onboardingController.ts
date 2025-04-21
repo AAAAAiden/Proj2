@@ -4,6 +4,7 @@ import User from '../model/User.js';
 import Token from '../model/Token.js';
 import { v4 as uuidv4 } from 'uuid';
 import { sendRegistrationEmail } from '../util/emailService.js';
+import { AuthRequest } from '../middleware/authMiddleware.js';
 
 // Employee: Submit onboarding application
 export const submitOnboarding = async (req: Request, res: Response): Promise<any> => {
@@ -52,17 +53,24 @@ export const updateOnboarding = async (req: Request, res: Response): Promise<any
 };
 
 // GET: View current application status (employee or HR)
-export const getOnboardingStatus = async (req: Request, res: Response): Promise<any> => {
+export const getOnboardingStatus = async (req: AuthRequest, res: Response): Promise<any> => {
   try {
-    const app = await OnboardingApp.findOne({ userId: req.params.userId });
+    const userId = req.user?.id;
+    const app = await OnboardingApp.findOne({ userId });
 
     if (!app) {
-      return res.status(404).json({ message: 'No application found' });
+      return res.json({ status: 'never submitted', data: null });
     }
-
-    res.json(app);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching application', error });
+    
+    console.log('📄 Found onboarding application:', app); 
+    
+    res.json({ status: app.status.toLowerCase(), data: app.formData });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      res.status(500).json({ message: 'Error fetching onboarding status', error: err.message });
+    } else {
+      res.status(500).json({ message: 'Unknown error' });
+    }
   }
 };
 

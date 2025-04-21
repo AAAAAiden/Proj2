@@ -55,8 +55,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
   try {
     const user = await User.findOne({ email }) as IUserDocument;
-    console.log('Attempted login:', email);
-    console.log('User found:', !!user);
+
     if (user) {
       console.log('Password match:', await bcrypt.compare(password, user.password));
     }
