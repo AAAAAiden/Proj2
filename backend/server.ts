@@ -33,5 +33,5 @@ app.use('/api/documents', documentRoutes); // optional for downloading previews
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

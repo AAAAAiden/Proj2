@@ -32,7 +32,6 @@ const TokenSchema: Schema = new Schema<IToken>({
   },
 });
 
-// Optional TTL index: auto-delete after expiry (MongoDB only if you prefer it)
 TokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<IToken>('Token', TokenSchema);

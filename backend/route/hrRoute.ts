@@ -22,7 +22,7 @@ import {
 
 const router = Router();
 
-// 🔐 HR-only routes
+// HR-only routes
 router.use(checkToken, checkRole(['hr']));
 
 /** ─────────────── HR Employee Profile Management ─────────────── */
