@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IToken extends Document {
+  name: string;
   email: string;
   token: string;
   createdAt: Date;
@@ -9,6 +10,10 @@ export interface IToken extends Document {
 }
 
 const TokenSchema: Schema = new Schema<IToken>({
+  name: {
+    type: String,
+    required: true,
+  },
   email: {
     type: String,
     required: true,

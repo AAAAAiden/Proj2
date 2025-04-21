@@ -1,20 +1,22 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import EditPage from "./pages/EditPage";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import SignIn from './pages/SignIn';
+import Register from './pages/Register';
+import Oops from './pages/Oops';
+import GenerateToken from './pages/HR/GenerateToken';
+import RequireHR from './components/RequireHR';
+import OnboardingPage from './pages/OnboardingPage';
 
-function App() {
-  return (
-    <>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/edit" element={<EditPage />} />
-      </Routes>
-    </BrowserRouter>
-    </>
-  )
-}
+const App = () => (
+  <Router>
+    <Routes>
+      <Route path="/signin" element={<SignIn />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/hr/token" element={<RequireHR><GenerateToken /></RequireHR>} />
+      <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="*" element={<Oops />} />
+    </Routes>
+  </Router>
+);
 
-export default App
+export default App;
