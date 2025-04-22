@@ -8,16 +8,18 @@ export interface AuthState {
   password: string;
   message: string;
   id: string| null;
+  authLoaded: boolean;
 }
 
-const initialState: AuthState = {
+export const initialState: AuthState = {
   username: '',
   email: '',
   role: '',
   token: '',
   password: '',
   message: '',
-  id: null
+  id: null,
+  authLoaded: false
 };
 
 const authSlice = createSlice({
@@ -25,10 +27,10 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setAuth(state, action: PayloadAction<AuthState>) {
-      return { ...action.payload };
+      return { ...action.payload, authLoaded: true  };
     },
     clearAuth() {
-      return initialState;
+      return { ...initialState, authLoaded: true };
     },
     setAuthMessage(state, action: PayloadAction<string>) {
       state.message = action.payload;

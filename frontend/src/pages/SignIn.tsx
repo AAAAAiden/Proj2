@@ -38,6 +38,13 @@ const SignIn: React.FC = () => {
       // Save info in Redux
       dispatch(setAuth({ ...data.user, token: data.token, password: values.password }));
 
+      localStorage.setItem('auth', JSON.stringify({
+        ...data.user,
+        token: data.token,
+        password: values.password,
+        message: '', 
+      }));
+
       // Role-based redirection
       if (data.user.role === 'hr') {
         navigate('/hr/token');

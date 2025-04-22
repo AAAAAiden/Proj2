@@ -1,10 +1,19 @@
 import { Navigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks';
-import { JSX } from "react";
+import React from "react";
 
-const RequireHR = ({ children }: { children: JSX.Element }) => {
-  const role = useAppSelector((state) => state.auth.role);
-  return role === 'hr' ? children : <Navigate to="/signin" replace />;
+const RequireHR: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token, role, authLoaded } = useAppSelector((state) => state.auth);
+
+  if (!authLoaded) {
+    return null; // or <Spinner />
+  }
+
+  if (!token || role !== 'hr') {
+    return <Navigate to="/signin" />;
+  }
+
+  return <>{children}</>;
 };
 
 export default RequireHR;
