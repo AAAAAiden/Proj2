@@ -200,8 +200,6 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
           </>
         )}
       </div>
- (
-          <>
       {/* Name Section */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">Name</legend>
@@ -390,11 +388,9 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
           ))}
         </div>
       </fieldset>
-      </>
-    )
 
 
-{(
+
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">
           U.S. Status & Work Authorization
@@ -525,7 +521,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
           </>
         )}
       </fieldset>
-          )}
+        
             
       {/* Documents */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">

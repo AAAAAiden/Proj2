@@ -86,7 +86,14 @@ const OnboardingPage: React.FC = () => {
 
         setStatus(res.data.status);
         if (res.data.data) {
-          setInitialData(res.data.data);
+          setInitialData({
+            ...initialData,
+            ...res.data.data,
+            immigration: {
+              ...initialData.immigration,
+              ...(res.data.data.immigration || {}),
+            },
+          });
         }
         if (res.data.feedback) {
           setFeedback(res.data.feedback);
