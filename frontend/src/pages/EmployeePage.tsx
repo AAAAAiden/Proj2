@@ -1,71 +1,94 @@
-// src/components/AccountLayout.tsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import PersonalInfoForm from "../components/PersonalInfoForm";
-import VisaStatusPage from "../components/VisaStatus";
-import type { PersonalInfo } from "../types";
+import { useEffect, useState } from "react";
+import { useAppSelector } from "../hooks";
+import axios from "axios";
+import AccountLayout from "../components/AccountLayout";
+import { PersonalInfo } from "../types";
 
-type ViewMode = "personal" | "visa";
-
-interface Props {
-  initialData: PersonalInfo;
-  onSubmit: (data: PersonalInfo) => void;
-}
-
-export default function AccountLayout({ initialData, onSubmit }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>("personal");
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    // TODO: your logout logic (e.g. clear tokens)…
-    navigate("/login");
+const defaultInfo: PersonalInfo = {
+    name: {
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      preferredName: '',
+      profilePicUrl: '',
+      email: '',
+      ssn: '',
+      dob: '',
+      gender: '',
+    },
+    address: {
+      building: '',
+      street: '',
+      city: '',
+      state: '',
+      zip: '',
+    },
+    contact: {
+      cell: '',
+      work: '',
+    },
+    employment: {
+      visaTitle: '',
+      startDate: '',
+      endDate: '',
+    },
+    emergency: {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      relationship: '',
+    },
+    documents: [],
+    immigration: {
+      isUSResident: false,
+      residentStatus: undefined,
+      workAuthType: undefined,
+      otherVisaTitle: '',
+      optReceiptUrl: '',
+      authStartDate: '',
+      authEndDate: '',
+    }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* NAV BAR */}
-      <nav className="bg-white shadow">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setViewMode("personal")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "personal"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Personal Info
-            </button>
-            <button
-              onClick={() => setViewMode("visa")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "visa"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Visa Status
-            </button>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            Logout
-          </button>
-        </div>
-      </nav>
-      <main className="flex-grow container mx-auto px-4 py-6">
-        {viewMode === "personal" ? (
-          <PersonalInfoForm
-            initialData={initialData}
-            onSubmit={onSubmit}
-          />
-        ) : (
-          <VisaStatusPage />
-        )}
-      </main>
-    </div>
-  );
-}
+const EmployeeDashboard: React.FC = () => {
+  const token = useAppSelector((state) => state.auth.token);
+  const [info, setInfo] = useState<PersonalInfo | null>(null);
+  const userId = useAppSelector((state) => state.auth.id);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const res = await axios.get("http://localhost:5001/api/onboarding/status", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const merged: PersonalInfo = {
+        ...defaultInfo,
+        ...res.data.data,
+        immigration: {
+          ...defaultInfo.immigration,
+          ...(res.data.data?.immigration || {}),
+        },
+      };
+
+      setInfo(merged);
+    };
+    fetch();
+  }, [token]);
+
+  const handleUpdate = async (updated: PersonalInfo) => {
+    await axios.put(
+      "http://localhost:5001/api/onboarding/update",
+      { userId, formData: updated },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+  };
+
+  if (!info) return <div>Loading...</div>;
+  console.log("Initial data: ", info);
+  return <AccountLayout initialData={info} onSubmit={handleUpdate} />;
+};
+
+export default EmployeeDashboard;

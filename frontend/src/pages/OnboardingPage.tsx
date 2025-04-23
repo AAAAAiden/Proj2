@@ -167,6 +167,17 @@ const OnboardingPage: React.FC = () => {
           <PersonalInfoForm initialData={initialData} onSubmit={handleSubmit} disabled={status === 'pending' || status === 'approved'} />
         </Panel>
       </Collapse>
+
+      {status === 'approved' && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => navigate('/employee')}
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Go to Employee Dashboard
+          </button>
+        </div>
+      )}
     </div>
   );
 };

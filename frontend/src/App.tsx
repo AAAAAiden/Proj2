@@ -10,6 +10,7 @@ import { useAppDispatch } from './hooks';
 import { setAuth, initialState } from './store/authSlice';
 import OnboardingReview from './pages/HR/OnboardingReview';
 import ViewApplication from './pages/HR/ViewApplication';
+import EmployeePage from './pages/EmployeePage';
 
 const App = () => {
   const dispatch = useAppDispatch();
@@ -36,6 +37,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/hr/token" element={<RequireHR><GenerateToken /></RequireHR>} />
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/employee" element={<EmployeePage />} />
         <Route path="/hr/review" element={<RequireHR><OnboardingReview /></RequireHR>} />
         <Route path="/hr/view-application/:userId" element={<RequireHR><ViewApplication /></RequireHR>} />
         <Route path="*" element={<Oops />} />
