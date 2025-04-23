@@ -5,6 +5,7 @@ import Token from '../model/Token.js';
 import { v4 as uuidv4 } from 'uuid';
 import { sendRegistrationEmail } from '../util/emailService.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
+import { IUserDocument } from '../model/User.js';
 
 // Employee: Submit onboarding application
 export const submitOnboarding = async (req: Request, res: Response): Promise<any> => {
@@ -62,9 +63,9 @@ export const getOnboardingStatus = async (req: AuthRequest, res: Response): Prom
       return res.json({ status: 'never submitted', data: null });
     }
     
-    console.log('📄 Found onboarding application:', app); 
+    console.log('Found onboarding application:', app); 
     
-    res.json({ status: app.status.toLowerCase(), data: app.formData });
+    res.json({ status: app.status.toLowerCase(), data: app.formData, feedback: app.feedback, });
   } catch (err: unknown) {
     if (err instanceof Error) {
       res.status(500).json({ message: 'Error fetching onboarding status', error: err.message });
@@ -119,9 +120,23 @@ export const rejectOnboarding = async (req: Request, res: Response): Promise<any
 // HR: List applications by status (pending, rejected, approved)
 export const listApplicationsByStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const apps = await OnboardingApp.find({ status: req.params.status });
-    res.json(apps);
+    // Capitalize the first letter to match DB schema values: 'Pending', 'Approved', 'Rejected'
+    const rawStatus = req.params.status;
+    const status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+
+    const apps = await OnboardingApp.find({ status })
+      .populate<{ userId: IUserDocument }>('userId', 'username email');
+
+    const formatted = apps.map(app => ({
+      userId: app.userId._id,
+      fullName: app.userId.username, // fallback since your schema doesn't have fullName
+      email: app.userId.email,
+      status: app.status,
+    }));
+
+    res.json(formatted);
   } catch (error) {
+    console.error('Error fetching onboarding applications:', error);
     res.status(500).json({ message: 'Error fetching applications', error });
   }
 };

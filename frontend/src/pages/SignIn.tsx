@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Typography, message } from 'antd';
+import { Form, Input, Button, Typography } from 'antd';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../hooks';
+import { useAppDispatch } from '../hooks';
 import { setAuth, setAuthMessage } from '../store/authSlice';
+import GlobalMessageBanner from '../components/GlobalMessageBanner';
 
 const { Title } = Typography;
 
@@ -16,28 +17,23 @@ const SignIn: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const errorMessage = useAppSelector((state) => state.auth.message);
 
   const onFinish = async (values: LoginForm) => {
-    console.log('Sign In form submitted:', values);
     setLoading(true);
     try {
       const { data } = await axios.post('http://localhost:5001/api/auth/login', values);
       
       if (!data.user) {
-        dispatch(setAuthMessage('User not found'));
-        message.error('No user found with this email.');
+        dispatch(setAuthMessage('User not found.'));
         return;
       }
   
       if (!data.token) {
-        dispatch(setAuthMessage('Invalid password'));
-        message.error('Incorrect password.');
+        dispatch(setAuthMessage('Incorrect password.'));
         return;
       }
-      // Save info in Redux
-      dispatch(setAuth({ ...data.user, token: data.token, password: values.password }));
 
+      dispatch(setAuth({ ...data.user, token: data.token, password: values.password }));
       localStorage.setItem('auth', JSON.stringify({
         ...data.user,
         token: data.token,
@@ -45,7 +41,6 @@ const SignIn: React.FC = () => {
         message: '', 
       }));
 
-      // Role-based redirection
       if (data.user.role === 'hr') {
         navigate('/hr/token');
       } else {
@@ -54,7 +49,7 @@ const SignIn: React.FC = () => {
 
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        const msg = err.response?.data?.message || 'Login failed';
+        const msg = err.response?.data?.message || 'Login failed.';
         dispatch(setAuthMessage(msg));
       }
     } finally {
@@ -63,13 +58,15 @@ const SignIn: React.FC = () => {
   };
 
   const handleInputChange = () => {
-    dispatch(setAuthMessage('')); // clear error message when typing
+    dispatch(setAuthMessage('')); // Clear message on input
   };
-
 
   return (
     <div style={{ maxWidth: 400, margin: 'auto', paddingTop: 100 }}>
       <Title level={2}>Sign In</Title>
+
+      <GlobalMessageBanner />
+
       <Form layout="vertical" onFinish={onFinish}>
         <Form.Item label="Email" name="email" rules={[{ required: true }]}>
           <Input onChange={handleInputChange} />
@@ -81,12 +78,6 @@ const SignIn: React.FC = () => {
           Sign In
         </Button>
       </Form>
-
-      {errorMessage && (
-        <div style={{ marginTop: 20, color: 'red', textAlign: 'center' }}>
-          {errorMessage}
-        </div>
-      )}
     </div>
   );
 };

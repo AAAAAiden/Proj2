@@ -6,7 +6,7 @@ const RequireHR: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token, role, authLoaded } = useAppSelector((state) => state.auth);
 
   if (!authLoaded) {
-    return null; // or <Spinner />
+    return null;
   }
 
   if (!token || role !== 'hr') {

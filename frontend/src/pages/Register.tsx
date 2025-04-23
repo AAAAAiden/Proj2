@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Typography, message } from 'antd';
+import { Form, Input, Button, Typography } from 'antd';
 import axios from 'axios';
+import { useAppDispatch } from '../hooks';
+import { setAuthMessage } from '../store/authSlice';
+import GlobalMessageBanner from '../components/GlobalMessageBanner';
 
 const { Title } = Typography;
 
@@ -11,6 +14,7 @@ const Register: React.FC = () => {
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const token = searchParams.get('token');
 
@@ -45,17 +49,18 @@ const Register: React.FC = () => {
     username: string;
     password: string;
   }
+
   const onFinish = async (values: RegisterForm) => {
     try {
       await axios.post('http://localhost:5001/api/auth/register', {
         ...values,
         token,
       });
-      message.success('Registration successful!');
+      dispatch(setAuthMessage('✅ Registration successful!'));
       navigate('/signin');
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
-      message.error('Registration failed.');
+      dispatch(setAuthMessage('Registration failed.'));
     }
   };
 
@@ -64,6 +69,8 @@ const Register: React.FC = () => {
   return (
     <div style={{ maxWidth: 500, margin: 'auto', paddingTop: 100 }}>
       <Title level={2}>Register</Title>
+
+      <GlobalMessageBanner />
 
       {!tokenValid && (
         <div style={{ color: 'red', marginBottom: 16 }}>{tokenError}</div>
