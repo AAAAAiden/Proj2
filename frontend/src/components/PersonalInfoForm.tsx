@@ -13,9 +13,10 @@ import {
 interface Props {
   initialData: PersonalInfo;
   onSubmit: (data: PersonalInfo) => void;
+  disabled?: boolean; 
 }
 
-export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
+export default function PersonalInfoForm({ initialData, onSubmit, disabled=false }: Props) {
   const [draft, setDraft] = useState<PersonalInfo>(initialData);
   const [isEditing, setIsEditing] = useState(false);
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
   }, [initialData]);
 
   const startEdit = () => {
+    if (disabled) return;
     setDraft(initialData);
     setIsEditing(true);
   };
@@ -95,6 +97,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
           <button
             type="button"
             onClick={startEdit}
+            disabled={disabled}
             className="px-4 py-2 bg-blue-600 text-white rounded"
           >
             Edit
@@ -129,7 +132,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
                 name={field}
                 value={draft.name[field]}
                 onChange={handleChange("name", field)}
-                disabled={!isEditing}
+                disabled={!isEditing || disabled}
                 className="mt-1 w-full border rounded px-2 py-1"
               />
             </div>
@@ -159,7 +162,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               type="email"
               value={draft.name.email}
               onChange={handleChange("name", "email")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -169,7 +172,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               name="ssn"
               value={draft.name.ssn}
               onChange={handleChange("name", "ssn")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -180,7 +183,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               type="date"
               value={draft.name.dob}
               onChange={handleChange("name", "dob")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -190,7 +193,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               name="gender"
               value={draft.name.gender}
               onChange={handleChange("name", "gender")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             >
               <option>Male</option>
@@ -212,7 +215,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
                 name={field}
                 value={draft.address[field]}
                 onChange={handleChange("address", field)}
-                disabled={!isEditing}
+                disabled={!isEditing || disabled}
                 className="mt-1 w-full border rounded px-2 py-1"
               />
             </div>
@@ -231,7 +234,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               type="tel"
               value={draft.contact.cell}
               onChange={handleChange("contact", "cell")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -242,7 +245,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               type="tel"
               value={draft.contact.work}
               onChange={handleChange("contact", "work")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -259,7 +262,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               name="visaTitle"
               value={draft.employment.visaTitle}
               onChange={handleChange("employment", "visaTitle")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -270,7 +273,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               type="date"
               value={draft.employment.startDate}
               onChange={handleChange("employment", "startDate")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -281,7 +284,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
               type="date"
               value={draft.employment.endDate}
               onChange={handleChange("employment", "endDate")}
-              disabled={!isEditing}
+              disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
@@ -299,7 +302,7 @@ export default function PersonalInfoForm({ initialData, onSubmit }: Props) {
                 name={field}
                 value={(draft.emergency as any)[field]}
                 onChange={handleChange("emergency", field)}
-                disabled={!isEditing}
+                disabled={!isEditing || disabled}
                 className="mt-1 w-full border rounded px-2 py-1"
               />
             </div>

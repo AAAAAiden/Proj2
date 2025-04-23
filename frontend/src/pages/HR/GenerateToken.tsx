@@ -3,6 +3,7 @@ import { Form, Input, Button, Typography, Table } from 'antd';
 import axios from 'axios';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { setAuthMessage } from '../../store/authSlice';
+import GlobalMessageBanner from '../../components/GlobalMessageBanner';
 
 const { Title } = Typography;
 
@@ -20,7 +21,6 @@ const GenerateToken: React.FC = () => {
   const [history, setHistory] = useState<TokenRecord[]>([]);
   const token = useAppSelector((state) => state.auth.token);
   const dispatch = useAppDispatch();
-  const messageStatus = useAppSelector((state) => state.auth.message);
 
   const fetchHistory = async () => {
     try {
@@ -113,11 +113,7 @@ const GenerateToken: React.FC = () => {
         </Button>
       </Form>
 
-      {messageStatus && (
-        <div style={{ marginTop: 20, color: messageStatus.startsWith('✅') ? 'green' : 'red', textAlign: 'center' }}>
-          {messageStatus}
-        </div>
-      )}
+      <GlobalMessageBanner />
 
       <Title level={4} style={{ marginTop: 40 }}>Token History</Title>
       <Table

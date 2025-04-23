@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
  */
 export const sendRegistrationEmail = async (recipientEmail: string, token: string): Promise<void> => {
   const registrationLink = `${process.env.CLIENT_URL}/register?token=${token}`;
-
+  console.log(process.env.CLIENT_URL);
   const mailOptions = {
     from: process.env.EMAIL_USERNAME,
     to: recipientEmail,

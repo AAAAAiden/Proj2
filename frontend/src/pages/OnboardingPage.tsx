@@ -6,6 +6,8 @@ import PersonalInfoForm from '../components/PersonalInfoForm';
 import { PersonalInfo } from '../types';
 import axios from 'axios';
 import { setForm } from '../store/onboardingSlice.ts';
+import GlobalMessageBanner from '../components/GlobalMessageBanner';
+import { setAuthMessage } from '../store/authSlice';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -15,9 +17,10 @@ const OnboardingPage: React.FC = () => {
   const userId = useAppSelector((state) => state.auth.id);
   const role = useAppSelector((state) => state.auth.role);
   const token = useAppSelector((state) => state.auth.token);
+  const authLoaded = useAppSelector((state) => state.auth.authLoaded);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-
+  const [feedback, setFeedback] = useState('');
   const [status, setStatus] = useState<'never submitted' | 'pending' | 'approved' | 'rejected'>('never submitted');
   const [initialData, setInitialData] = useState<PersonalInfo>({
     name: {
@@ -56,7 +59,10 @@ const OnboardingPage: React.FC = () => {
     },
     documents: [],
   });
+
+  
   useEffect(() => {
+    if (!authLoaded) return;
     if (role !== 'employee') {
       navigate('/signin');
       return;
@@ -72,36 +78,48 @@ const OnboardingPage: React.FC = () => {
         if (res.data.data) {
           setInitialData(res.data.data);
         }
+        if (res.data.feedback) {
+          setFeedback(res.data.feedback);
+        }
       } catch (err) {
         console.error('Error fetching onboarding info:', err);
+        dispatch(setAuthMessage('Failed to fetch onboarding data.'));
       }
     };
 
     fetchData();
-  }, [role, token, navigate]);
+  }, [authLoaded, role, token, navigate, dispatch]);
 
   const handleSubmit = async (data: PersonalInfo) => {
     try {
-      await axios.post(
-        'http://localhost:5001/api/onboarding/submit',
-        {
+      const url =
+        status === 'rejected'
+          ? 'http://localhost:5001/api/onboarding/update'
+          : 'http://localhost:5001/api/onboarding/submit';
+  
+      await axios({
+        method: status === 'rejected' ? 'put' : 'post',
+        url,
+        data: {
           userId: userId,
           formData: data,
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
       dispatch(setForm(data));
       setStatus('pending');
+      dispatch(setAuthMessage('Onboarding form submitted successfully!'));
     } catch (err) {
       console.error('Submit error:', err);
+      dispatch(setAuthMessage('Failed to submit onboarding form.'));
     }
   };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <Title level={3}>Applicant: {username}</Title>
+      <GlobalMessageBanner />
       <div className="mb-4">
         <Text strong>Status: </Text>
         <Tag
@@ -117,11 +135,16 @@ const OnboardingPage: React.FC = () => {
         >
           {status}
         </Tag>
+        {status === 'rejected' && feedback && (
+          <div style={{ marginTop: 16, padding: 12, background: '#fff1f0', border: '1px solid #ffa39e', borderRadius: 4 }}>
+            <b>Feedback:</b> {feedback}
+          </div>
+        )}
       </div>
 
       <Collapse defaultActiveKey={['1']}>
         <Panel header="Onboarding Application" key="1">
-          <PersonalInfoForm initialData={initialData} onSubmit={handleSubmit} />
+          <PersonalInfoForm initialData={initialData} onSubmit={handleSubmit} disabled={status === 'pending'}/>
         </Panel>
       </Collapse>
     </div>
