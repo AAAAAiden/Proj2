@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import { useNavigate } from 'react-router-dom';
 import { Collapse, Typography, Tag } from 'antd';
@@ -8,6 +8,7 @@ import axios from 'axios';
 import { setForm } from '../store/onboardingSlice.ts';
 import GlobalMessageBanner from '../components/GlobalMessageBanner';
 import { setAuthMessage } from '../store/authSlice';
+import { ImmigrationInfo }  from '../types';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -58,6 +59,15 @@ const OnboardingPage: React.FC = () => {
       relationship: '',
     },
     documents: [],
+    immigration: {
+      isUSResident: false,
+      residentStatus: undefined,
+      workAuthType: undefined,
+      otherVisaTitle: '',
+      optReceiptUrl: '',
+      authStartDate: '',
+      authEndDate: '',
+    }
   });
 
   
@@ -89,6 +99,9 @@ const OnboardingPage: React.FC = () => {
 
     fetchData();
   }, [authLoaded, role, token, navigate, dispatch]);
+
+
+
 
   const handleSubmit = async (data: PersonalInfo) => {
     try {
@@ -152,3 +165,4 @@ const OnboardingPage: React.FC = () => {
 };
 
 export default OnboardingPage;
+

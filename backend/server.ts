@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import connectDB from './config/db.js';
-
+import 'dotenv/config';
 import authRoutes from './route/authRoute.js';
 import employeeRoutes from './route/employeeRoute.js';
 import hrRoutes from './route/hrRoute.js';

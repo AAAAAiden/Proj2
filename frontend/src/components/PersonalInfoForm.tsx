@@ -8,6 +8,7 @@ import {
   EmploymentInfo,
   EmergencyContact,
   Document,
+  ImmigrationInfo
 } from "../types";
 
 interface Props {
@@ -29,6 +30,52 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
     setIsEditing(true);
   };
 
+
+  const handleIsResidentChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const isUS = e.target.value === "yes";
+    setDraft(prev => ({
+      ...prev,
+      immigration: {
+        // wipe out workAuth fields when switching back to resident
+        isUSResident: isUS,
+        residentStatus: isUS ? prev.immigration.residentStatus : undefined,
+        workAuthType: isUS ? undefined : prev.immigration.workAuthType,
+        otherVisaTitle: undefined,
+        optReceiptUrl: undefined,
+        authStartDate: undefined,
+        authEndDate: undefined,
+      }
+    }));
+  };
+
+
+  const handleImmigrationChange = (field: keyof ImmigrationInfo) =>
+  (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const value = e.target.type === "file"
+      ? undefined
+      : e.target.value;
+    setDraft(prev => ({
+      ...prev,
+      immigration: {
+        ...prev.immigration,
+        [field]: value,
+      } as any,
+    }));
+  };
+
+
+  const handleOptUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDraft(prev => ({
+      ...prev,
+      immigration: {
+        ...prev.immigration,
+        optReceiptUrl: URL.createObjectURL(file),
+      }
+    }));
+  };
+  
   const cancelEdit = () => {
     if (window.confirm("Discard all changes?")) {
       setDraft(initialData);
@@ -82,6 +129,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
       documents: [...prev.documents, newDoc],
     }));
   };
+
 
   return (
     <form
@@ -310,6 +358,139 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
         </div>
       </fieldset>
 
+
+
+      <fieldset className="bg-white p-6 rounded shadow space-y-4">
+        <legend className="text-lg font-semibold">
+          U.S. Status & Work Authorization
+        </legend>
+
+        {/* 1. Are you a U.S. resident or citizen? */}
+        <div>
+          <label className="block text-sm font-medium">
+            Permanent resident or citizen of the U.S.?
+          </label>
+          <select
+            value={draft.immigration.isUSResident ? "yes" : "no"}
+            onChange={handleIsResidentChange}
+            disabled={!isEditing}
+            className="mt-1 w-full border rounded px-2 py-1"
+          >
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        {draft.immigration.isUSResident ? (
+          /* if Yes → choose Green Card or Citizen */
+          <div>
+            <label className="block text-sm font-medium">
+              Status
+            </label>
+            <select
+              value={draft.immigration.residentStatus}
+              onChange={handleImmigrationChange("residentStatus")}
+              disabled={!isEditing}
+              className="mt-1 w-full border rounded px-2 py-1"
+            >
+              <option>Green Card</option>
+              <option>Citizen</option>
+            </select>
+          </div>
+        ) : (
+          /* if No → work authorization flow */
+          <>
+            <div>
+              <label className="block text-sm font-medium">
+                What is your work authorization?
+              </label>
+              <select
+                value={draft.immigration.workAuthType}
+                onChange={handleImmigrationChange("workAuthType")}
+                disabled={!isEditing}
+                className="mt-1 w-full border rounded px-2 py-1"
+              >
+                <option>H1-B</option>
+                <option>L2</option>
+                <option>F1</option>
+                <option>H4</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            {/* F1 → upload OPT receipt */}
+            {draft.immigration.workAuthType === "F1" && (
+              <div>
+                <label className="block text-sm font-medium">
+                  Upload OPT Receipt
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleOptUpload}
+                  disabled={!isEditing}
+                  className="mt-1"
+                />
+                {draft.immigration.optReceiptUrl && (
+                  <a
+                    href={draft.immigration.optReceiptUrl}
+                    target="_blank"
+                    rel="noopener"
+                    className="mt-2 inline-block underline"
+                  >
+                    Preview OPT Receipt
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Other → specify visa title */}
+            {draft.immigration.workAuthType === "Other" && (
+              <div>
+                <label className="block text-sm font-medium">
+                  Please specify visa title
+                </label>
+                <input
+                  type="text"
+                  value={draft.immigration.otherVisaTitle}
+                  onChange={handleImmigrationChange("otherVisaTitle")}
+                  disabled={!isEditing}
+                  className="mt-1 w-full border rounded px-2 py-1"
+                />
+              </div>
+            )}
+
+            {/* common start/end dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={draft.immigration.authStartDate}
+                  onChange={handleImmigrationChange("authStartDate")}
+                  disabled={!isEditing}
+                  className="mt-1 w-full border rounded px-2 py-1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={draft.immigration.authEndDate}
+                  onChange={handleImmigrationChange("authEndDate")}
+                  disabled={!isEditing}
+                  className="mt-1 w-full border rounded px-2 py-1"
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </fieldset>
+            
       {/* Documents */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">Documents</legend>
