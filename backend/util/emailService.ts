@@ -11,9 +11,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/**
- * Send a registration token email with the link.
- */
 export const sendRegistrationEmail = async (recipientEmail: string, token: string): Promise<void> => {
   const registrationLink = `${process.env.CLIENT_URL}/register?token=${token}`;
   console.log(process.env.CLIENT_URL);
@@ -33,9 +30,6 @@ export const sendRegistrationEmail = async (recipientEmail: string, token: strin
   await transporter.sendMail(mailOptions);
 };
 
-/**
- * Optionally send feedback on rejected onboarding or visa review.
- */
 export const sendFeedbackEmail = async (recipientEmail: string, subject: string, message: string): Promise<void> => {
   const mailOptions = {
     from: process.env.EMAIL_USERNAME,
