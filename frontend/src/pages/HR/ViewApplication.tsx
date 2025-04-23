@@ -27,6 +27,15 @@ interface ApplicationDetails {
       name: string;
       url: string;
     }[];
+    immigration?: {
+      isUSResident: boolean;
+      residentStatus?: string;
+      workAuthType?: string;
+      otherVisaTitle?: string;
+      optReceiptUrl?: string;
+      authStartDate?: string;
+      authEndDate?: string;
+    };
   }
 
 const ViewApplication: React.FC = () => {
@@ -70,6 +79,7 @@ const ViewApplication: React.FC = () => {
               relationship: raw.formData.emergency.relationship,
             },
             documents: raw.formData.documents || [],
+            immigration: raw.formData.immigration || undefined,
           });
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
@@ -165,7 +175,44 @@ const ViewApplication: React.FC = () => {
             ))}
         </>
         )}  
-        
+        {application.immigration && (
+        <>
+            <Title level={4}>U.S. Status & Work Authorization</Title>
+            <Paragraph>
+            <b>Is U.S. Resident:</b> {application.immigration.isUSResident ? 'Yes' : 'No'}
+            </Paragraph>
+            {application.immigration.isUSResident ? (
+            <Paragraph>
+                <b>Resident Status:</b> {application.immigration.residentStatus || 'N/A'}
+            </Paragraph>
+            ) : (
+            <>
+                <Paragraph>
+                <b>Work Auth Type:</b> {application.immigration.workAuthType}
+                </Paragraph>
+                {application.immigration.workAuthType === 'Other' && (
+                <Paragraph>
+                    <b>Other Visa Title:</b> {application.immigration.otherVisaTitle}
+                </Paragraph>
+                )}
+                {application.immigration.workAuthType === 'F1' && application.immigration.optReceiptUrl && (
+                <Paragraph>
+                    <b>OPT Receipt:</b>{' '}
+                    <a href={application.immigration.optReceiptUrl} target="_blank" rel="noopener noreferrer">
+                    Preview
+                    </a>
+                </Paragraph>
+                )}
+                <Paragraph>
+                <b>Auth Start Date:</b> {application.immigration.authStartDate || 'N/A'}
+                </Paragraph>
+                <Paragraph>
+                <b>Auth End Date:</b> {application.immigration.authEndDate || 'N/A'}
+                </Paragraph>
+            </>
+            )}
+        </>
+        )}
       {application.status === 'rejected' && application.feedback && (
         <Paragraph><b>Feedback:</b> {application.feedback}</Paragraph>
       )}
