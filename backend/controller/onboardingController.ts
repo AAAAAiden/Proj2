@@ -27,7 +27,7 @@ export const submitOnboarding = async (req: Request, res: Response): Promise<any
 
     res.status(201).json({ message: 'Application submitted', application: newApp });
   } catch (error) {
-    console.error("❌ Submit error:", error);
+    console.error("Submit error:", error);
     res.status(500).json({ message: 'Failed to submit application', error });
   }
 };
@@ -62,9 +62,7 @@ export const getOnboardingStatus = async (req: AuthRequest, res: Response): Prom
     if (!app) {
       return res.json({ status: 'never submitted', data: null });
     }
-    
-    console.log('Found onboarding application:', app); 
-    
+        
     res.json({ status: app.status.toLowerCase(), data: app.formData, feedback: app.feedback, });
   } catch (err: unknown) {
     if (err instanceof Error) {

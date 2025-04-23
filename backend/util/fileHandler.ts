@@ -1,41 +1,54 @@
-import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
 import multer from 'multer';
-import {
-  getVisaStatus,
-  uploadOPTReceipt,
-  uploadOPTEAD,
-  uploadI983,
-  uploadI20,
-  reviewDocument,
-} from '../controller/visaController.js';
+import { fileURLToPath } from 'url';
 
-import { checkToken, checkRole } from '../middleware/authMiddleware.js';
+// Resolve __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const router = Router();
-const upload = multer({ dest: 'uploads/' });
+// Absolute upload path
+export const UPLOAD_DIR = path.join(__dirname, '..', 'uploads', 'documents');
 
-/** ─────────────── Employee Routes ─────────────── **/
+// Ensure the directory exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
-router.use(checkToken, checkRole(['employee']));
+// Configure multer storage
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const timestamp = Date.now();
+    const sanitized = file.originalname.replace(/\s+/g, '_');
+    cb(null, `${timestamp}-${sanitized}`);
+  },
+});
 
-// GET: visa status for current user
-router.get('/status', getVisaStatus);
+// Optional: restrict allowed file types
+const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (
+    file.mimetype.startsWith('image/') ||
+    file.mimetype === 'application/pdf'
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image and PDF files are allowed.'));
+  }
+};
 
-// POST: upload OPT receipt
-router.post('/upload/opt-receipt', upload.single('file'), uploadOPTReceipt);
+// Multer upload middleware
+export const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+});
 
-// POST: upload OPT EAD
-router.post('/upload/opt-ead', upload.single('file'), uploadOPTEAD);
-
-// POST: upload I-983
-router.post('/upload/i983', upload.single('file'), uploadI983);
-
-// POST: upload I-20
-router.post('/upload/i20', upload.single('file'), uploadI20);
-
-/** ─────────────── HR Route ─────────────── **/
-
-// HR-only access to review documents
-router.put('/review', checkToken, checkRole(['hr']), reviewDocument);
-
-export default router;
+// Optional: remove a file by filename
+export const deleteFile = (filePath: string): void => {
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
