@@ -157,7 +157,7 @@ const OnboardingPage: React.FC = () => {
 
       <Collapse defaultActiveKey={['1']}>
         <Panel header="Onboarding Application" key="1">
-          <PersonalInfoForm initialData={initialData} onSubmit={handleSubmit} disabled={status === 'pending' || status === 'approved'}/>
+          <PersonalInfoForm initialData={initialData} onSubmit={handleSubmit} disabled={status === 'pending' || status === 'approved'} />
         </Panel>
       </Collapse>
     </div>

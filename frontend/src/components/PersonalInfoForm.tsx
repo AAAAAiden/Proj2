@@ -11,6 +11,8 @@ import {
   ImmigrationInfo
 } from "../types";
 
+
+
 interface Props {
   initialData: PersonalInfo;
   onSubmit: (data: PersonalInfo) => void;
@@ -132,6 +134,36 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
 
 
   return (
+
+    <div className="space-y-4">
+
+{/* <div className="flex space-x-2">
+        {(["all", "personal", "auth"] as ViewMode[]).map((mode) => {
+          // label mapping
+          const label =
+            mode === "all"
+              ? "All"
+              : mode === "personal"
+              ? "Personal Info"
+              : "Work Auth";
+          const isActive = viewMode === mode;
+          return (
+            <button
+              key={mode}
+              type="button"
+              className={`px-4 py-2 rounded ${
+                isActive
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div> */}
+
+
     <form
       onSubmit={(e: FormEvent) => {
         e.preventDefault();
@@ -168,7 +200,8 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
           </>
         )}
       </div>
-
+ (
+          <>
       {/* Name Section */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">Name</legend>
@@ -357,9 +390,11 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
           ))}
         </div>
       </fieldset>
+      </>
+    )
 
 
-
+{(
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">
           U.S. Status & Work Authorization
@@ -490,6 +525,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
           </>
         )}
       </fieldset>
+          )}
             
       {/* Documents */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
@@ -513,6 +549,8 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
           <input type="file" onChange={handleDocUpload} className="mt-2" />
         )}
       </fieldset>
+
     </form>
+    </div>
   );
 }
