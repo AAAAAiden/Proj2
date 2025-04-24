@@ -1,9 +1,9 @@
-// src/components/VisaStatus.tsx
 import React, { useEffect, useState, ChangeEvent } from 'react';
 import axios from 'axios';
 import { api } from '../api';
+import { useAppSelector } from '../hooks';
 
-type Status = 'Pending' | 'Approved' | 'Rejected';
+type Status = 'Not Submitted' | 'Pending' | 'Approved' | 'Rejected';
 
 interface VisaDocument {
   path: string;
@@ -20,20 +20,23 @@ interface VisaStatusData {
 
 interface Props {
   userId: string;
-  onNotOpt?: () => void; // optional callback if not OPT
+  onNotOpt?: () => void;
 }
 
 const VisaStatus: React.FC<Props> = ({ userId, onNotOpt }) => {
   const [visa, setVisa] = useState<VisaStatusData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const token = useAppSelector((state) => state.auth.token);
 
-  // load visa‐status on mount
   useEffect(() => {
-    api.get<VisaStatusData>(`/api/visa-status/${userId}`)
+    api.get<VisaStatusData>(`/api/visa-status/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then(res => {
         if (!res.data.optReceipt) {
-          // not OPT user
           onNotOpt?.();
         } else {
           setVisa(res.data);
@@ -41,34 +44,43 @@ const VisaStatus: React.FC<Props> = ({ userId, onNotOpt }) => {
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [userId, onNotOpt]);
+  }, [userId, onNotOpt, token]);
 
   const upload = (stage: keyof VisaStatusData) => async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
+
     const form = new FormData();
     form.append('file', e.target.files[0]);
+    form.append('userId', userId);
+
     try {
-      await api.post(`/api/visa-status/${userId}/${stage}`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      console.log(`http://localhost:5001/api/visa-status/upload/${stage}`);
+      await api.post(`http://localhost:5001/api/visa-status/upload/${stage}`, form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
-      // refresh
-      const updated = await api.get<VisaStatusData>(`/api/visa-status/${userId}`);
+
+      // Refresh status after upload
+      const updated = await api.get<VisaStatusData>(`/api/visa-status/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setVisa(updated.data);
     } catch (err: any) {
       alert('Upload failed: ' + err.message);
     }
   };
 
-  if (loading)   return <p>Loading…</p>;
-  if (error)     return <p className="error">Error: {error}</p>;
-  if (!visa)     return <p>fail to get a visa status</p>;
+  if (loading) return <p>Loading…</p>;
+  if (error) return <p className="error">Error: {error}</p>;
+  if (!visa) return <p>fail to get a visa status</p>;
 
   // helper to render each card
   const renderStage = (
     label: string,
     doc: VisaDocument | undefined,
     nextLabel: string,
-    
     uploadHandler?: (e: ChangeEvent<HTMLInputElement>) => void
   ) => (
     <div className="visa-stage">
@@ -76,6 +88,7 @@ const VisaStatus: React.FC<Props> = ({ userId, onNotOpt }) => {
       {doc ? (
         <>
           <p>Status: <strong>{doc.status}</strong></p>
+          {doc.status === 'Not Submitted' && <p>Please upload your {label.toLowerCase()} to begin.</p>}
           {doc.status === 'Pending' && <p>Waiting for HR to approve your {label.toLowerCase()}.</p>}
           {doc.status === 'Approved' && <p>{nextLabel}</p>}
           {doc.status === 'Rejected' && <p className="feedback">HR Feedback: {doc.feedback}</p>}
@@ -84,51 +97,55 @@ const VisaStatus: React.FC<Props> = ({ userId, onNotOpt }) => {
         <p>Not yet submitted</p>
       )}
 
-      {/* show upload if allowed */}
-      {(doc?.status === 'Approved' || !doc) && uploadHandler && (
-        <input type="file" accept="application/pdf,image/*" onChange={uploadHandler} />
+      {uploadHandler && (
+        (!doc || doc.status === 'Not Submitted' || doc.status === 'Rejected') && (
+          <input type="file" accept="application/pdf,image/*" onChange={uploadHandler} />
+        )
       )}
     </div>
   );
 
   return (
     <div className="visa-status-container">
-      {/** 1) OPT Receipt is already in “Pending” from onboarding */}
       {renderStage(
         'OPT Receipt',
         visa.optReceipt,
-        'Waiting for HR to approve your OPT Receipt',
-        // since Receipt was submitted in onboarding, we typically don’t re‐upload here
-        undefined
+        visa.optReceipt?.status === 'Approved'
+          ? 'Approved by HR'
+          : 'Waiting for HR to approve your OPT Receipt',
+        upload('optReceipt')
       )}
 
-      {/** 2) OPT EAD */}
       {visa.optReceipt?.status === 'Approved' && renderStage(
         'OPT EAD',
         visa.optEAD,
-        'Please download & fill out the I-983 form',
+        visa.optEAD?.status === 'Approved'
+        ? 'Approved by HR'
+        : 'Waiting for HR to approve your OPT EAD',
         upload('optEAD')
       )}
       {visa.optReceipt?.status !== 'Approved' && (
         <p className="hint">You must wait for OPT Receipt approval before uploading EAD.</p>
       )}
 
-      {/** 3) I-983 */}
       {visa.optEAD?.status === 'Approved' && renderStage(
         'I-983',
         visa.i983,
-        'Please upload your Form I-20',
+        visa.i983?.status === 'Approved'
+        ? 'Approved by HR'
+        : 'Waiting for HR to approve your I983',
         upload('i983')
       )}
       {visa.optEAD?.status !== 'Approved' && visa.optReceipt?.status === 'Approved' && (
         <p className="hint">You must wait for OPT EAD approval before filling out I-983.</p>
       )}
 
-      {/** 4) I-20 */}
       {visa.i983?.status === 'Approved' && renderStage(
         'I-20',
         visa.i20,
-        'All done!',
+        visa.i20?.status === 'Approved'
+        ? 'All done!'
+        : 'Waiting for HR to approve your I20',
         upload('i20')
       )}
       {visa.i983?.status !== 'Approved' && visa.optEAD?.status === 'Approved' && (

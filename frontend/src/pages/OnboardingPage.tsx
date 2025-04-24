@@ -10,6 +10,7 @@ import GlobalMessageBanner from '../components/GlobalMessageBanner';
 import { setAuthMessage } from '../store/authSlice';
 import { ImmigrationInfo } from '../types';
 import MainLayout from '../components/MainLayout';
+import { cloneDeep } from 'lodash';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -87,20 +88,23 @@ const OnboardingPage: React.FC = () => {
 
       setStatus(res.data.status);
       if (res.data.data) {
-        setInitialData({
+        const merged: PersonalInfo = {
           ...initialData,
           ...res.data.data,
           name: {
             ...initialData.name,
             ...res.data.data.name,
-            email: res.data.data.name?.email || email,  
+            email: res.data.data.name?.email || email,
           },
           immigration: {
             ...initialData.immigration,
-            ...(res.data.data.immigration || {}),
+            ...(res.data.data?.immigration || {}),
           },
-        });
+        };
+
+        setInitialData(merged);
       }
+
       if (res.data.feedback) {
         setFeedback(res.data.feedback);
       }

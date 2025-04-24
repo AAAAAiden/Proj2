@@ -38,19 +38,12 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
   const userId = useAppSelector((state) => state.auth.id);
   const email = useAppSelector((state) => state.auth.email);
   const [profilePicBlobUrl, setProfilePicBlobUrl] = useState<string | undefined>(undefined);
+  const [form] = Form.useForm();
 
   useEffect(() => {
-    setDraft(prev => {
-      // copy existing docs
-      const docs = [...prev.documents];
-      // for (const { id, label } of docSlots) {
-      //   if (!docs.some(d => d.id === id)) {
-      //     docs.push({ id, name: label, url: "" });
-      //   }
-      // }
-      return { ...prev, documents: docs };
-    });
-  }, [initialData]);
+    setDraft(initialData);
+    form.setFieldsValue(initialData);
+  }, [initialData, form]);
   
   useEffect(() => {
     const profilePic = draft.documents.find(doc => doc.type === 'profile_picture');
@@ -240,7 +233,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
   }, [token]);
 
   return (
-    <Form layout="vertical" onFinish={saveEdit} style={{ background: "#fff", padding: 24, borderRadius: 8 }}>
+    <Form form={form} layout="vertical" onFinish={saveEdit} style={{ background: "#fff", padding: 24, borderRadius: 8 }}>
       <Form.Item>
         <Row justify="space-between" align="middle">
           <Col>

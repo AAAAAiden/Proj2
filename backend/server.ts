@@ -8,11 +8,14 @@ import hrRoutes from './route/hrRoute.js';
 import visaRoutes from './route/visaRoute.js';
 import onboardingRoutes from './route/onboardingRoute.js';
 import documentRoutes from './route/documentRoute.js';
-
+import path from 'path';
 import errorHandler from './middleware/errorHandler.js';
+import { fileURLToPath } from 'url';
 
 const app: Application = express();
 const PORT = process.env.PORT || 5001;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 connectDB();
 
@@ -22,11 +25,11 @@ app.use(express.json());
 // ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/employee', employeeRoutes);
+app.use('/api/documents', documentRoutes);
 app.use('/api/hr', hrRoutes);
-app.use('/api/visa', visaRoutes);
 app.use('/api/onboarding', onboardingRoutes);
-app.use('/api/documents', documentRoutes); // optional for downloading previews
-
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/api', visaRoutes);
 // GLOBAL ERROR HANDLER
 app.use(errorHandler);
 
