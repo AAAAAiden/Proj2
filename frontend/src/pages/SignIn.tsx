@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Typography } from 'antd';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../hooks';
 import { setAuth, setAuthMessage } from '../store/authSlice';
 import GlobalMessageBanner from '../components/GlobalMessageBanner';
+import AuthCardWrapper from '../components/AuthCardWrapper'
 
 const { Title } = Typography;
 
@@ -18,16 +19,20 @@ const SignIn: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    localStorage.clear(); // Force logout when visiting sign-in page
+  }, []);
+
   const onFinish = async (values: LoginForm) => {
     setLoading(true);
     try {
       const { data } = await axios.post('http://localhost:5001/api/auth/login', values);
-      
+
       if (!data.user) {
         dispatch(setAuthMessage('User not found.'));
         return;
       }
-  
+
       if (!data.token) {
         dispatch(setAuthMessage('Incorrect password.'));
         return;
@@ -38,15 +43,14 @@ const SignIn: React.FC = () => {
         ...data.user,
         token: data.token,
         password: values.password,
-        message: '', 
+        message: '',
       }));
 
       if (data.user.role === 'hr') {
         navigate('/hr/token');
       } else {
-        navigate('/onboarding'); 
+        navigate('/onboarding');
       }
-
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const msg = err.response?.data?.message || 'Login failed.';
@@ -58,13 +62,12 @@ const SignIn: React.FC = () => {
   };
 
   const handleInputChange = () => {
-    dispatch(setAuthMessage('')); // Clear message on input
+    dispatch(setAuthMessage(''));
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: 'auto', paddingTop: 100 }}>
-      <Title level={2}>Sign In</Title>
-
+    <AuthCardWrapper width={500}>
+      <Title level={2} style={{ textAlign: 'center' }}>Sign In</Title>
       <GlobalMessageBanner />
 
       <Form layout="vertical" onFinish={onFinish}>
@@ -78,8 +81,7 @@ const SignIn: React.FC = () => {
           Sign In
         </Button>
       </Form>
-    </div>
+    </AuthCardWrapper>
   );
 };
-
 export default SignIn;

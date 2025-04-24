@@ -1,11 +1,13 @@
-// src/components/AccountLayout.tsx
-import { useState } from "react";
+import React, { useState } from "react";
+import { Layout, Menu, Row, Col, Card, Button } from "antd";
 import { useNavigate } from "react-router-dom";
+import { useAppDispatch } from "../hooks";
+import { clearAuth } from "../store/authSlice";
 import PersonalInfoForm from "./PersonalInfoForm";
 import VisaStatusPage from "./VisaStatus";
 import type { PersonalInfo } from "../types";
-import { useAppDispatch } from "../hooks";
-import { clearAuth } from "../store/authSlice";
+
+const { Header, Content } = Layout;
 
 type ViewMode = "personal" | "visa";
 
@@ -14,63 +16,57 @@ interface Props {
   onSubmit: (data: PersonalInfo) => void;
 }
 
-export default function AccountLayout({ initialData, onSubmit }: Props) {
+const AccountLayout: React.FC<Props> = ({ initialData, onSubmit }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("personal");
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const handleLogout = () => {
-    sessionStorage.clear(); 
-    dispatch(clearAuth());        
+    sessionStorage.clear();
+    dispatch(clearAuth());
     navigate("/signin");
   };
 
+  const menuItems = [
+    { key: "personal", label: "Personal Info" },
+    { key: "visa", label: "Visa Status" },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* NAV BAR */}
-      <nav className="bg-white shadow">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setViewMode("personal")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "personal"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Personal Info
-            </button>
-            <button
-              onClick={() => setViewMode("visa")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "visa"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Visa Status
-            </button>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            Logout
-          </button>
-        </div>
-      </nav>
-      <main className="flex-grow container mx-auto px-4 py-6">
-        {viewMode === "personal" ? (
-          <PersonalInfoForm
-            initialData={initialData}
-            onSubmit={onSubmit}
-            disabled={false}
-          />
-        ) : (
-          <VisaStatusPage />
-        )}
-      </main>
-    </div>
+    <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
+      <Header style={{ display: "flex", alignItems: "center", padding: "0 24px" }}>
+        <Menu
+          theme="dark"
+          mode="horizontal"
+          selectedKeys={[viewMode]}
+          items={menuItems}
+          onClick={({ key }) => setViewMode(key as ViewMode)}
+          style={{ flex: 1, background: "transparent" }}
+        />
+        <Button type="primary" danger onClick={handleLogout}>
+          Logout
+        </Button>
+      </Header>
+
+      <Content style={{ padding: "24px", background: "#f0f2f5" }}>
+        <Row justify="center">
+          <Col xs={24} sm={22} md={20} lg={16} xl={12}>
+            <Card bordered={false} style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+              {viewMode === "personal" ? (
+                <PersonalInfoForm
+                  initialData={initialData}
+                  onSubmit={onSubmit}
+                  disabled={false}
+                />
+              ) : (
+                <VisaStatusPage />
+              )}
+            </Card>
+          </Col>
+        </Row>
+      </Content>
+    </Layout>
   );
-}
+};
+
+export default AccountLayout;
