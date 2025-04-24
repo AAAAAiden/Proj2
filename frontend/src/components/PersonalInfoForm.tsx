@@ -28,12 +28,39 @@ export default function PersonalInfoForm({
   onSubmit,
   disabled = false,
 }: Props) {
-  const [draft, setDraft] = useState<PersonalInfo>(initialData);
+  // const [draft, setDraft] = useState<PersonalInfo>(initialData);
   const [isEditing, setIsEditing] = useState(false);
 
+  const docSlots = [
+    { id: "driversLicense", label: "Driver's License" },
+    { id: "passport",       label: "Passport"       },
+    { id: "resume",         label: "Resume"         },
+  ] as const;
+  // useEffect(() => {
+  //   setDraft(initialData);
+  // }, [initialData]);
+
+  const [draft, setDraft] = useState<PersonalInfo>(() => ({
+    ...initialData,
+    documents: docSlots.map(slot => {
+      const existing = initialData.documents.find(d => d.id === slot.id);
+      return existing ?? { id: slot.id, name: slot.label, url: "" };
+    }),
+  }));
+
   useEffect(() => {
-    setDraft(initialData);
+    setDraft(prev => {
+      // copy existing docs
+      const docs = [...prev.documents];
+      for (const { id, label } of docSlots) {
+        if (!docs.some(d => d.id === id)) {
+          docs.push({ id, name: label, url: "" });
+        }
+      }
+      return { ...prev, documents: docs };
+    });
   }, [initialData]);
+
 
   const startEdit = () => {
     if (disabled) return;
@@ -95,6 +122,19 @@ export default function PersonalInfoForm({
       url: URL.createObjectURL(file),
     };
     setDraft((prev) => ({ ...prev, documents: [...prev.documents, newDoc] }));
+    return false;
+  };
+
+  const handleDocUpload = (file: File, slotId: string) => {
+    const url = URL.createObjectURL(file);
+    setDraft(prev => ({
+      ...prev,
+      documents: prev.documents.map(d =>
+        d.id === slotId
+          ? { ...d, name: file.name, url }
+          : d
+      )
+    }));
     return false;
   };
 
@@ -205,7 +245,7 @@ export default function PersonalInfoForm({
         </Row>
       )}
 
-      <Divider orientation="left">Documents</Divider>
+      {/* <Divider orientation="left">Documents</Divider>
       <Row>
         <Col span={24}>
           <Space direction="vertical" style={{ width: '100%' }}>
@@ -231,7 +271,45 @@ export default function PersonalInfoForm({
             )}
           </Space>
         </Col>
-      </Row>
+      </Row> */}
+
+
+
+
+
+<Divider orientation="left">Documents</Divider>
+<Row gutter={16}>
+  {docSlots.map(({ id, label }) => {
+    const doc = draft.documents.find(d => d.id === id)!;
+    return (
+      <Col span={8} key={id}>
+        <Form.Item label={label}>
+          {isEditing ? (
+            <Upload
+              beforeUpload={file => handleDocUpload(file, id)}
+              showUploadList={false}
+            >
+              <Button icon={<UploadOutlined />} disabled={!isEditing}>
+                Upload
+              </Button>
+            </Upload>
+          ) : doc.url ? (
+            <Space>
+              <a href={doc.url} download>{doc.name}</a>
+              <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                Preview
+              </a>
+            </Space>
+          ) : (
+            <Typography.Text type="secondary">
+              No file uploaded
+            </Typography.Text>
+          )}
+        </Form.Item>
+      </Col>
+    );
+  })}
+</Row>
     </Form>
   );
 }
