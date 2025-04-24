@@ -86,6 +86,11 @@ const ViewApplication: React.FC = () => {
     }
   };
 
+
+  useEffect(() => {
+    dispatch(setAuthMessage(''));  
+  }, [dispatch]);
+
   useEffect(() => {
     if (!authLoaded || !token || !userId) return;
 
@@ -269,6 +274,15 @@ const ViewApplication: React.FC = () => {
             )}
         </>
         )}
+
+      {application.status === 'approved' && (
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <Button type="default" onClick={() => window.location.href = '/hr/review'}>
+            Return to Review Page
+            </Button>
+        </div>
+      )}
+
       {application.status === 'rejected' && application.feedback && (
         <Paragraph><b>Feedback:</b> {application.feedback}</Paragraph>
       )}

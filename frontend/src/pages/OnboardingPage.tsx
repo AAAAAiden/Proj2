@@ -9,6 +9,7 @@ import { setForm } from '../store/onboardingSlice.ts';
 import GlobalMessageBanner from '../components/GlobalMessageBanner';
 import { setAuthMessage } from '../store/authSlice';
 import { ImmigrationInfo }  from '../types';
+import MainLayout from '../components/MainLayout';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -137,6 +138,7 @@ const OnboardingPage: React.FC = () => {
   };
 
   return (
+    <MainLayout title="Onboarding Application">
     <div className="p-6 max-w-6xl mx-auto">
       <Title level={3}>Applicant: {username}</Title>
       <GlobalMessageBanner />
@@ -179,6 +181,7 @@ const OnboardingPage: React.FC = () => {
         </div>
       )}
     </div>
+    </MainLayout>
   );
 };
 

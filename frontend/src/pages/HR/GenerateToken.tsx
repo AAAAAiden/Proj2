@@ -4,6 +4,10 @@ import axios from 'axios';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { setAuthMessage } from '../../store/authSlice';
 import GlobalMessageBanner from '../../components/GlobalMessageBanner';
+import MainLayout from '../../components/MainLayout';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { hrNavItems, handleHRNavClick, hrPathToNavKey } from '../../utils/hrNavigation';
+
 
 const { Title } = Typography;
 
@@ -21,6 +25,9 @@ const GenerateToken: React.FC = () => {
   const [history, setHistory] = useState<TokenRecord[]>([]);
   const token = useAppSelector((state) => state.auth.token);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const selectedKey = hrPathToNavKey[location.pathname] || '';
 
   const fetchHistory = async () => {
     try {
@@ -53,6 +60,10 @@ const GenerateToken: React.FC = () => {
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  useEffect(() => {
+    dispatch(setAuthMessage(''));  
+  }, [dispatch]);
 
   const onFinish = async (values: { name: string; email: string }) => {
     setLoading(true);
@@ -99,6 +110,12 @@ const GenerateToken: React.FC = () => {
   ];
 
   return (
+    < MainLayout
+    title="HR Home Page"
+    navItems={hrNavItems}
+    selectedKey={selectedKey}
+    onNavClick={handleHRNavClick(navigate)} >
+
     <div style={{ maxWidth: 700, margin: 'auto', paddingTop: 80 }}>
       <Title level={2}>Generate Registration Token</Title>
       <Form layout="vertical" onFinish={onFinish}>
@@ -123,6 +140,7 @@ const GenerateToken: React.FC = () => {
         pagination={{ pageSize: 5 }}
       />
     </div>
+    </MainLayout>
   );
 };
 
