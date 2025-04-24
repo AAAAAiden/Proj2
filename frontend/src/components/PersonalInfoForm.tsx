@@ -16,12 +16,15 @@ import {
   Select,
   Upload,
   Space,
-  Typography
+  Typography,
+  Collapse,
+  Avatar
 } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { UploadOutlined, UserOutlined } from "@ant-design/icons";
 
 const { Title } = Typography;
 const { Option } = Select;
+const { Panel } = Collapse;
 
 interface Props {
   initialData: PersonalInfo;
@@ -34,6 +37,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
   const [isEditing, setIsEditing] = useState(false);
   const token = useAppSelector((state) => state.auth.token);
   const userId = useAppSelector((state) => state.auth.id);
+  const email = useAppSelector((state) => state.auth.email);
 
   useEffect(() => {
     setDraft(initialData);
@@ -53,6 +57,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
   };
 
   const saveEdit = () => {
+    console.log("Final formData being submitted:", draft);
     onSubmit(draft);
     setIsEditing(false);
   };
@@ -152,7 +157,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
       console.error('Upload failed', err);
     }
   };
-
+  
   const deleteDoc = async (docId: string) => {
     if (!token || !userId) return;
     if (!window.confirm("Are you sure you want to delete this document?")) return;
@@ -170,7 +175,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
       console.error('Delete failed', err);
     }
   };
-
+  
   const previewDoc = useCallback(async (docId: string) => {
     try {
       const res = await axios.get(`http://localhost:5001/api/documents/preview/${docId}`, {
@@ -206,56 +211,188 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
   return (
     <Form layout="vertical" onFinish={saveEdit} style={{ background: "#fff", padding: 24, borderRadius: 8 }}>
       <Form.Item>
-        <Space style={{ float: "right" }}>
-          {!isEditing ? (
-            <Button type="primary" onClick={startEdit} disabled={disabled}>
-              Edit
-            </Button>
-          ) : (
-            <>
-              <Button onClick={cancelEdit}>Cancel</Button>
-              <Button type="primary" htmlType="submit">Save</Button>
-            </>
-          )}
-        </Space>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Avatar
+              size={80}
+              src={draft.documents.find(doc => doc.type === 'profile_picture')?.url}
+              icon={<UserOutlined />}
+            />
+          </Col>
+
+          <Col>
+            <Space>
+              {!isEditing ? (
+                <Button type="primary" onClick={startEdit} disabled={disabled}>
+                  Edit
+                </Button>
+              ) : (
+                <>
+                  <Button onClick={cancelEdit}>Cancel</Button>
+                  <Button type="primary" htmlType="submit">
+                    Save
+                  </Button>
+                </>
+              )}
+            </Space>
+          </Col>
+        </Row>
       </Form.Item>
 
-      <Divider orientation="left">Name</Divider>
-      <Row gutter={16}>
-        <Col span={12}>
-          <Form.Item label="First Name">
-            <Input value={draft.name.firstName} disabled={!isEditing || disabled} onChange={handleChange("name", "firstName")} />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item label="Last Name">
-            <Input value={draft.name.lastName} disabled={!isEditing || disabled} onChange={handleChange("name", "lastName")} />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item label="Preferred Name">
-            <Input value={draft.name.preferredName} disabled={!isEditing || disabled} onChange={handleChange("name", "preferredName")} />
-          </Form.Item>
-        </Col>
-      </Row>
+      <Collapse defaultActiveKey={['1']}>
+        <Panel header="Name & Contact" key="1">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <Form.Item label="First Name">
+                <Input
+                  value={draft.name.firstName}
+                  disabled={!isEditing || disabled}
+                  onChange={handleChange("name", "firstName")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Last Name">
+                <Input
+                  value={draft.name.lastName}
+                  disabled={!isEditing || disabled}
+                  onChange={handleChange("name", "lastName")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Preferred Name">
+                <Input
+                  value={draft.name.preferredName}
+                  disabled={!isEditing || disabled}
+                  onChange={handleChange("name", "preferredName")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Cell Phone">
+                <Input
+                  value={draft.contact.cell}
+                  disabled={!isEditing || disabled}
+                  onChange={handleChange("contact", "cell")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Work Phone">
+                <Input
+                  value={draft.contact.work}
+                  disabled={!isEditing || disabled}
+                  onChange={handleChange("contact", "work")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24}>
+              <Form.Item label="Email">
+                <Input value={email} disabled readOnly />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Panel>
 
-      <Divider orientation="left">Contact Info</Divider>
-      <Row gutter={16}>
-        <Col span={12}>
-          <Form.Item label="Cell Phone">
-            <Input value={draft.contact.cell} disabled={!isEditing || disabled} onChange={handleChange("contact", "cell")} />
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item label="Work Phone">
-            <Input value={draft.contact.work} disabled={!isEditing || disabled} onChange={handleChange("contact", "work")} />
-          </Form.Item>
-        </Col>
-      </Row>
+        <Panel header="Address" key="2"> 
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12}>
+            <Form.Item label="Building/Apt #">
+              <Input
+                value={draft.address.building}
+                disabled={!isEditing}
+                onChange={handleChange("address", "building")}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item label="Street Name">
+              <Input
+                value={draft.address.street}
+                disabled={!isEditing}
+                onChange={handleChange("address", "street")}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Form.Item label="City">
+              <Input
+                value={draft.address.city}
+                disabled={!isEditing}
+                onChange={handleChange("address", "city")}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} sm={8}>
+            <Form.Item label="State">
+              <Input
+                value={draft.address.state}
+                disabled={!isEditing}
+                onChange={handleChange("address", "state")}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} sm={8}>
+            <Form.Item label="Zip Code">
+              <Input
+                value={draft.address.zip}
+                disabled={!isEditing}
+                onChange={handleChange("address", "zip")}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        </Panel>
 
-      <Divider orientation="left">U.S. Status & Work Authorization</Divider>
-      <Row gutter={16}>
-        <Col span={12}>
+        <Panel header="Personal Info" key='3'>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={24}>
+            <Form.Item label="SSN">
+              <Input
+                value={draft.name.ssn}
+                disabled={!isEditing}
+                onChange={handleChange("name", "ssn")}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={8}>
+            <Form.Item label="Date of Birth">
+              <Input
+                type="date"
+                value={draft.name.dob}
+                disabled={!isEditing}
+                onChange={handleChange("name", "dob")}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={8}>
+            <Form.Item label="Gender">
+              <Select
+                value={draft.name.gender}
+                disabled={!isEditing}
+                onChange={(value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    name: { ...prev.name, gender: value },
+                  }))
+                }
+              >
+                <Option value="male">Male</Option>
+                <Option value="female">Female</Option>
+                <Option value="prefer_not_to_say">I do not wish to answer</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+        </Panel>
+
+
+      <Panel header="U.S. Status & Work Authorization" key='4'>
+      <Row gutter={[16,16]}>
+        <Col xs={24} sm={12}>
           <Form.Item label="Resident Status">
             <Select value={draft.immigration.isUSResident ? 'yes' : 'no'} onChange={(v) => handleIsResidentChange({ target: { value: v } } as any)} disabled={!isEditing}>
               <Option value="yes">Yes</Option>
@@ -264,7 +401,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
           </Form.Item>
         </Col>
         {!draft.immigration.isUSResident && (
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <Form.Item label="Work Authorization">
               <Select value={draft.immigration.workAuthType} onChange={(v) => handleImmigrationChange("workAuthType")({ target: { value: v } } as any)} disabled={!isEditing}>
                 <Option value="H1-B">H1-B</Option>
@@ -294,8 +431,89 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
           )}
         </Row>
       )}
+      </Panel>
 
-      <Divider orientation="left">Documents</Divider>
+      <Panel header="References" key="5">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <Form.Item label="First Name">
+                <Input value={draft.references.firstName} disabled={!isEditing} onChange={handleChange("references", "firstName")} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Last Name">
+                <Input value={draft.references.lastName} disabled={!isEditing} onChange={handleChange("references", "lastName")} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Phone">
+                <Input value={draft.references.phone} disabled={!isEditing} onChange={handleChange("references", "phone")} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Email">
+                <Input value={draft.references.email} disabled={!isEditing} onChange={handleChange("references", "email")} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Relationship">
+                <Input value={draft.references.relationship} disabled={!isEditing} onChange={handleChange("references", "relationship")} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Panel>
+      
+        <Panel header="Emergency Contact" key="6">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <Form.Item label="First Name">
+                <Input
+                  value={draft.emergency.firstName}
+                  disabled={!isEditing}
+                  onChange={handleChange("emergency", "firstName")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Last Name">
+                <Input
+                  value={draft.emergency.lastName}
+                  disabled={!isEditing}
+                  onChange={handleChange("emergency", "lastName")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Phone">
+                <Input
+                  value={draft.emergency.phone}
+                  disabled={!isEditing}
+                  onChange={handleChange("emergency", "phone")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Email">
+                <Input
+                  value={draft.emergency.email}
+                  disabled={!isEditing}
+                  onChange={handleChange("emergency", "email")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Relationship">
+                <Input
+                  value={draft.emergency.relationship}
+                  disabled={!isEditing}
+                  onChange={handleChange("emergency", "relationship")}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Panel>
+
+      <Panel header="Documents" key='6'>
       <Row>
         <Col span={24}>
           <Space direction="vertical" style={{ width: '100%' }}>
@@ -327,6 +545,8 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
           </Space>
         </Col>
       </Row>
+      </Panel>
+      </Collapse>
     </Form>
   );
 }
