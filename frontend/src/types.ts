@@ -63,6 +63,15 @@ export interface NameInfo {
     authEndDate?: string;     
   }
   
+  export interface Reference {
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    relationship: string;
+  }
+
   export interface PersonalInfo {
     name: NameInfo;
     address: AddressInfo;
@@ -71,5 +80,6 @@ export interface NameInfo {
     emergency: EmergencyContact;
     documents: Document[];
     immigration: ImmigrationInfo;
+    references: Reference;
   }
   

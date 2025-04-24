@@ -17,8 +17,65 @@ const OnboardingAppSchema = new Schema<IOnboardingApp>({
     unique: true,
   },
   formData: {
-    type: Schema.Types.Mixed,
-    required: true,
+    name: {
+      firstName: String,
+      middleName: String,
+      lastName: String,
+      preferredName: String,
+      profilePicUrl: String,
+      email: String,
+      ssn: String,
+      dob: String,
+      gender: String,
+    },
+    address: {
+      building: String,
+      street: String,
+      city: String,
+      state: String,
+      zip: String,
+    },
+    contact: {
+      cell: String,
+      work: String,
+    },
+    employment: {
+      visaTitle: String,
+      startDate: String,
+      endDate: String,
+    },
+    emergency: {
+      firstName: String,
+      lastName: String,
+      phone: String,
+      email: String,
+      relationship: String,
+    },
+    references:
+      {
+        firstName: String,
+        lastName: String,
+        phone: String,
+        email: String,
+        relationship: String,
+      },
+    documents: [
+      {
+        id: String,
+        name: String,
+        url: String,
+        type: String,
+      }
+    ],
+    immigration: {
+      isUSResident: Boolean,
+      residentStatus: String,
+      workAuthType: String,
+      otherVisaTitle: String,
+      optReceiptUrl: String,
+      authStartDate: String,
+      authEndDate: String,
+    },
   },
   status: {
     type: String,

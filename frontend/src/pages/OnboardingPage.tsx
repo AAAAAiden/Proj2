@@ -8,7 +8,7 @@ import axios from 'axios';
 import { setForm } from '../store/onboardingSlice.ts';
 import GlobalMessageBanner from '../components/GlobalMessageBanner';
 import { setAuthMessage } from '../store/authSlice';
-import { ImmigrationInfo }  from '../types';
+import { ImmigrationInfo } from '../types';
 import MainLayout from '../components/MainLayout';
 
 const { Title, Text } = Typography;
@@ -25,53 +25,53 @@ const OnboardingPage: React.FC = () => {
   const [feedback, setFeedback] = useState('');
   const [status, setStatus] = useState<'never submitted' | 'pending' | 'approved' | 'rejected'>('never submitted');
   const [initialData, setInitialData] = useState<PersonalInfo>({
-    name: {
-      firstName: '',
-      middleName: '',
-      lastName: '',
-      preferredName: '',
-      profilePicUrl: '',
-      email: '',
-      ssn: '',
-      dob: '',
-      gender: '',
-    },
-    address: {
-      building: '',
-      street: '',
-      city: '',
-      state: '',
-      zip: '',
-    },
-    contact: {
-      cell: '',
-      work: '',
-    },
-    employment: {
-      visaTitle: '',
-      startDate: '',
-      endDate: '',
-    },
-    emergency: {
-      firstName: '',
-      lastName: '',
-      phone: '',
-      email: '',
-      relationship: '',
-    },
-    documents: [],
-    immigration: {
-      isUSResident: false,
-      residentStatus: undefined,
-      workAuthType: undefined,
-      otherVisaTitle: '',
-      optReceiptUrl: '',
-      authStartDate: '',
-      authEndDate: '',
-    }
-  });
+  name: {
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    preferredName: '',
+    profilePicUrl: '',
+    email: '',
+    ssn: '',
+    dob: '',
+    gender: '',
+  },
+  address: {
+    building: '',
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
+  },
+  contact: {
+    cell: '',
+    work: '',
+  },
+  employment: {
+    visaTitle: '',
+    startDate: '',
+    endDate: '',
+  },
+  emergency: {
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    relationship: '',
+  },
+  references: [],
+  documents: [],
+  immigration: {
+    isUSResident: false,
+    residentStatus: undefined,
+    workAuthType: undefined,
+    otherVisaTitle: '',
+    optReceiptUrl: '',
+    authStartDate: '',
+    authEndDate: '',
+  }
+});
 
-  
   useEffect(() => {
     if (!authLoaded) return;
     if (role !== 'employee') {
@@ -108,16 +108,13 @@ const OnboardingPage: React.FC = () => {
     fetchData();
   }, [authLoaded, role, token, navigate, dispatch]);
 
-
-
-
   const handleSubmit = async (data: PersonalInfo) => {
     try {
       const url =
         status === 'rejected'
           ? 'http://localhost:5001/api/onboarding/update'
           : 'http://localhost:5001/api/onboarding/submit';
-  
+
       await axios({
         method: status === 'rejected' ? 'put' : 'post',
         url,
@@ -127,7 +124,6 @@ const OnboardingPage: React.FC = () => {
         },
         headers: { Authorization: `Bearer ${token}` },
       });
-  
       dispatch(setForm(data));
       setStatus('pending');
       dispatch(setAuthMessage('Onboarding form submitted successfully!'));
@@ -139,51 +135,50 @@ const OnboardingPage: React.FC = () => {
 
   return (
     <MainLayout title="Onboarding Application">
-    <div className="p-6 max-w-6xl mx-auto">
-      <Title level={3}>Applicant: {username}</Title>
-      <GlobalMessageBanner />
-      <div className="mb-4">
-        <Text strong>Status: </Text>
-        <Tag
-          color={
-            status === 'never submitted'
-              ? 'gray'
-              : status === 'pending'
-              ? 'orange'
-              : status === 'rejected'
-              ? 'red'
-              : 'green'
-          }
-        >
-          {status}
-        </Tag>
-        {status === 'rejected' && feedback && (
-          <div style={{ marginTop: 16, padding: 12, background: '#fff1f0', border: '1px solid #ffa39e', borderRadius: 4 }}>
-            <b>Feedback:</b> {feedback}
+      <div className="p-6 max-w-6xl mx-auto">
+        <Title level={3}>Applicant: {username}</Title>
+        <GlobalMessageBanner />
+        <div className="mb-4">
+          <Text strong>Status: </Text>
+          <Tag
+            color={
+              status === 'never submitted'
+                ? 'gray'
+                : status === 'pending'
+                ? 'orange'
+                : status === 'rejected'
+                ? 'red'
+                : 'green'
+            }
+          >
+            {status}
+          </Tag>
+          {status === 'rejected' && feedback && (
+            <div style={{ marginTop: 16, padding: 12, background: '#fff1f0', border: '1px solid #ffa39e', borderRadius: 4 }}>
+              <b>Feedback:</b> {feedback}
+            </div>
+          )}
+        </div>
+
+        <PersonalInfoForm
+          initialData={initialData}
+          onSubmit={handleSubmit}
+          disabled={status === 'pending' || status === 'approved'}
+        />
+
+        {status === 'approved' && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate('/employee')}
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+              Go to Employee Dashboard
+            </button>
           </div>
         )}
       </div>
-
-      <Collapse defaultActiveKey={['1']}>
-        <Panel header="Onboarding Application" key="1">
-          <PersonalInfoForm initialData={initialData} onSubmit={handleSubmit} disabled={status === 'pending' || status === 'approved'} />
-        </Panel>
-      </Collapse>
-
-      {status === 'approved' && (
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/employee')}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Go to Employee Dashboard
-          </button>
-        </div>
-      )}
-    </div>
     </MainLayout>
   );
 };
 
 export default OnboardingPage;
-

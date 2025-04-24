@@ -41,6 +41,7 @@ const defaultInfo: PersonalInfo = {
     email: '',
     relationship: '',
   },
+  references: [],
   documents: [],
   immigration: {
     isUSResident: false,
