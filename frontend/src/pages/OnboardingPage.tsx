@@ -19,58 +19,96 @@ const OnboardingPage: React.FC = () => {
   const userId = useAppSelector((state) => state.auth.id);
   const role = useAppSelector((state) => state.auth.role);
   const token = useAppSelector((state) => state.auth.token);
+  const email = useAppSelector((state) => state.auth.email);
   const authLoaded = useAppSelector((state) => state.auth.authLoaded);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [feedback, setFeedback] = useState('');
   const [status, setStatus] = useState<'never submitted' | 'pending' | 'approved' | 'rejected'>('never submitted');
   const [initialData, setInitialData] = useState<PersonalInfo>({
-  name: {
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    preferredName: '',
-    profilePicUrl: '',
-    email: '',
-    ssn: '',
-    dob: '',
-    gender: '',
-  },
-  address: {
-    building: '',
-    street: '',
-    city: '',
-    state: '',
-    zip: '',
-  },
-  contact: {
-    cell: '',
-    work: '',
-  },
-  employment: {
-    visaTitle: '',
-    startDate: '',
-    endDate: '',
-  },
-  emergency: {
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
-    relationship: '',
-  },
-  references: [],
-  documents: [],
-  immigration: {
-    isUSResident: false,
-    residentStatus: undefined,
-    workAuthType: undefined,
-    otherVisaTitle: '',
-    optReceiptUrl: '',
-    authStartDate: '',
-    authEndDate: '',
-  }
-});
+    name: {
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      preferredName: '',
+      profilePicUrl: '',
+      email: '',
+      ssn: '',
+      dob: '',
+      gender: '',
+    },
+    address: {
+      building: '',
+      street: '',
+      city: '',
+      state: '',
+      zip: '',
+    },
+    contact: {
+      cell: '',
+      work: '',
+    },
+    employment: {
+      visaTitle: '',
+      startDate: '',
+      endDate: '',
+    },
+    emergency: {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      relationship: '',
+    },
+    references: {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      relationship: '',
+    }, 
+    documents: [], 
+    immigration: {
+      isUSResident: false,
+      residentStatus: undefined,
+      workAuthType: undefined,
+      otherVisaTitle: '',
+      optReceiptUrl: '',
+      authStartDate: '',
+      authEndDate: '',
+    }
+  });
+  
+  const fetchData = async () => {
+    try {
+      const res = await axios.get('http://localhost:5001/api/onboarding/status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setStatus(res.data.status);
+      if (res.data.data) {
+        setInitialData({
+          ...initialData,
+          ...res.data.data,
+          name: {
+            ...initialData.name,
+            ...res.data.data.name,
+            email: res.data.data.name?.email || email,  
+          },
+          immigration: {
+            ...initialData.immigration,
+            ...(res.data.data.immigration || {}),
+          },
+        });
+      }
+      if (res.data.feedback) {
+        setFeedback(res.data.feedback);
+      }
+    } catch (err) {
+      console.error('Error fetching onboarding info:', err);
+      dispatch(setAuthMessage('Failed to fetch onboarding data.'));
+    }
+  };
 
   useEffect(() => {
     if (!authLoaded) return;
@@ -78,38 +116,19 @@ const OnboardingPage: React.FC = () => {
       navigate('/signin');
       return;
     }
-
-    const fetchData = async () => {
-      try {
-        const res = await axios.get('http://localhost:5001/api/onboarding/status', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        setStatus(res.data.status);
-        if (res.data.data) {
-          setInitialData({
-            ...initialData,
-            ...res.data.data,
-            immigration: {
-              ...initialData.immigration,
-              ...(res.data.data.immigration || {}),
-            },
-          });
-        }
-        if (res.data.feedback) {
-          setFeedback(res.data.feedback);
-        }
-      } catch (err) {
-        console.error('Error fetching onboarding info:', err);
-        dispatch(setAuthMessage('Failed to fetch onboarding data.'));
-      }
-    };
-
     fetchData();
   }, [authLoaded, role, token, navigate, dispatch]);
 
   const handleSubmit = async (data: PersonalInfo) => {
     try {
+      const dataWithEmail = {
+        ...data,
+        name: {
+          ...data.name,
+          email: email,
+        },
+      };
+
       const url =
         status === 'rejected'
           ? 'http://localhost:5001/api/onboarding/update'
@@ -120,13 +139,15 @@ const OnboardingPage: React.FC = () => {
         url,
         data: {
           userId: userId,
-          formData: data,
+          formData: dataWithEmail,
         },
         headers: { Authorization: `Bearer ${token}` },
       });
-      dispatch(setForm(data));
+      dispatch(setForm(dataWithEmail));
       setStatus('pending');
       dispatch(setAuthMessage('Onboarding form submitted successfully!'));
+
+      await fetchData();
     } catch (err) {
       console.error('Submit error:', err);
       dispatch(setAuthMessage('Failed to submit onboarding form.'));

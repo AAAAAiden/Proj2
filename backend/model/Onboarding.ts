@@ -59,14 +59,20 @@ const OnboardingAppSchema = new Schema<IOnboardingApp>({
         email: String,
         relationship: String,
       },
-    documents: [
-      {
-        id: String,
-        name: String,
-        url: String,
-        type: String,
-      }
-    ],
+      documents: {
+        type: [
+          {
+            id: String,
+            name: String,
+            url: String,
+            type: {
+              type: String,
+              enum: ['profile_picture', 'driver_license', 'work_auth', 'opt_receipt', 'opt_ead', 'i983', 'i20', 'other'],
+            }
+          }
+        ],
+        required: false
+      },
     immigration: {
       isUSResident: Boolean,
       residentStatus: String,

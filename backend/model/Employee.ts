@@ -9,19 +9,25 @@ export interface IContact {
   relationship: string;
 }
 
+export interface IDocument {
+  type: 'profile_picture' | 'driver_license' | 'work_auth';
+  filename: string;
+  path: string;
+}
+
 export interface IEmployee extends Document {
-  userId: mongoose.Types.ObjectId; // link to User table
+  userId: mongoose.Types.ObjectId;
   name: {
     firstName: string;
     lastName: string;
     middleName?: string;
     preferredName?: string;
+    email: string;
   };
   profilePicture?: string;
   contactInfo: {
     cellPhone?: string;
     workPhone?: string;
-    email: string;
   };
   address: {
     building?: string;
@@ -36,15 +42,25 @@ export interface IEmployee extends Document {
   workAuth: {
     citizenshipStatus: 'Citizen' | 'Green Card' | 'Visa';
     visaTitle?: string;
-    startDate?: Date;
-    endDate?: Date;
     visaType?: 'H1-B' | 'L2' | 'F1' | 'H4' | 'Other';
     otherTitle?: string;
+    startDate?: Date;
+    endDate?: Date;
     optReceiptPath?: string;
   };
   reference?: IContact;
   emergencyContacts: IContact[];
+  documents: IDocument[];
 }
+
+const ContactSchema = {
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  middleName: String,
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  relationship: { type: String, required: true },
+};
 
 const EmployeeSchema = new Schema<IEmployee>({
   userId: {
@@ -56,14 +72,14 @@ const EmployeeSchema = new Schema<IEmployee>({
   name: {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    middleName: { type: String },
-    preferredName: { type: String },
+    middleName: String,
+    preferredName: String,
+    email: { type: String, required: true },
   },
   profilePicture: String,
   contactInfo: {
     cellPhone: String,
     workPhone: String,
-    email: { type: String, required: true },
   },
   address: {
     building: String,
@@ -92,14 +108,16 @@ const EmployeeSchema = new Schema<IEmployee>({
     email: String,
     relationship: String,
   },
-  emergencyContacts: [
+  emergencyContacts: [ContactSchema],
+  documents: [
     {
-      firstName: { type: String, required: true },
-      lastName: { type: String, required: true },
-      middleName: String,
-      phone: { type: String, required: true },
-      email: { type: String, required: true },
-      relationship: { type: String, required: true },
+      type: {
+        type: String,
+        enum: ['profile_picture', 'driver_license', 'work_auth'],
+        required: true,
+      },
+      filename: { type: String, required: true },
+      path: { type: String, required: true },
     },
   ],
 });

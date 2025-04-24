@@ -5,14 +5,54 @@ import { DocumentModel } from '../model/Document.js';
 // GET employee profile
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const employee = await Employee.findById(req.params.id).select('-__v');
+    const employee = await Employee.findById(req.params.id);
     if (!employee) {
       res.status(404).json({ message: 'Employee not found' });
       return;
     }
     res.json(employee);
   } catch (error) {
-    res.status(500).json({ message: 'Error retrieving profile', error });
+    console.error('Error fetching employee:', error);
+    res.status(500).json({ message: 'Failed to fetch employee', error });
+  }
+};
+
+export const getAllEmployees = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const employees = await Employee.find({}, {
+      _id: 1,
+      'name.firstName': 1,
+      'name.lastName': 1,
+      'name.preferredName': 1,
+      'name.email': 1,
+      ssn: 1,
+      'contactInfo.cellPhone': 1,
+      'contactInfo.workPhone': 1,
+      'workAuth.visaTitle': 1,
+    });
+
+    const mapped = employees.map(emp => ({
+      _id: emp._id,
+      name: {
+        firstName: emp.name.firstName,
+        lastName: emp.name.lastName,
+        preferredName: emp.name.preferredName,
+      },
+      contact: {
+        cell: emp.contactInfo?.cellPhone || '',
+        work: emp.contactInfo?.workPhone || '',
+      },
+      employment: {
+        visaTitle: emp.workAuth?.visaTitle || '',
+      },
+      email: emp.name.email || '',
+      ssn: emp.ssn || '',
+    }));
+
+    res.json(mapped);
+  } catch (error) {
+    console.error('Error fetching employee list:', error);
+    res.status(500).json({ message: 'Failed to fetch employees', error });
   }
 };
 
@@ -46,10 +86,10 @@ export const addEmergencyContact = async (req: Request, res: Response): Promise<
       return;
     }
 
-    employee.emergencyContacts.push(req.body);
+    employee.emergencyContacts = req.body; 
     await employee.save();
 
-    res.status(201).json({ message: 'Emergency contact added', contacts: employee.emergencyContacts });
+    res.status(201).json({ message: 'Emergency contact updated', contact: employee.emergencyContacts });
   } catch (error) {
     res.status(500).json({ message: 'Error adding contact', error });
   }

@@ -10,10 +10,13 @@ const { Title, Paragraph } = Typography;
 const { Panel } = Collapse;
 
 interface ApplicationDetails {
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string
   email: string;
   address: string;
   phone: string;
+  workPhone: string;
   ssn: string;
   dob: string;
   gender: string;
@@ -111,10 +114,13 @@ const ViewApplication: React.FC = () => {
         const form = raw.formData;
 
         setApplication({
-          fullName: form.name.preferredName || `${form.name.firstName} ${form.name.lastName}`,
+          firstName: form.name.firstName,
+          lastName: form.name.lastName,
+          preferredName: form.name.preferredName,          
           email: form.name.email,
           address: `${form.address.building} ${form.address.street}, ${form.address.city}, ${form.address.state} ${form.address.zip}`,
           phone: form.contact.cell,
+          workPhone: form.contact.work,
           ssn: form.name.ssn,
           dob: form.name.dob,
           gender: form.name.gender,
@@ -181,11 +187,11 @@ const ViewApplication: React.FC = () => {
       <GlobalMessageBanner />
       <Collapse defaultActiveKey={['1']}>
         <Panel header="Name & Contact" key="1">
-          <Paragraph><b>First Name:</b> {application.fullName.split(' ')[0]}</Paragraph>
-          <Paragraph><b>Last Name:</b> {application.fullName.split(' ')[1]}</Paragraph>
-          <Paragraph><b>Preferred Name:</b> {application.fullName}</Paragraph>
+          <Paragraph><b>First Name:</b> {application.firstName}</Paragraph>
+          <Paragraph><b>Last Name:</b> {application.lastName}</Paragraph>
+          <Paragraph><b>Preferred Name:</b> {application.preferredName}</Paragraph>
           <Paragraph><b>Cell Phone:</b> {application.phone}</Paragraph>
-          <Paragraph><b>Work Phone:</b> - </Paragraph>
+          <Paragraph><b>Work Phone:</b> {application.workPhone || '-'} </Paragraph>
           <Paragraph><b>Email:</b> {application.email}</Paragraph>
         </Panel>
         <Panel header="Address" key="2">
@@ -225,7 +231,7 @@ const ViewApplication: React.FC = () => {
             <Paragraph><b>Email:</b> {application.emergency.email}</Paragraph>
             <Paragraph><b>Relationship:</b> {application.emergency.relationship}</Paragraph>
         </Panel>
-        <Panel header="Documents" key="6">
+        <Panel header="Documents" key="7">
           {['profile_picture', 'driver_license', 'work_auth'].map((category) => (
             <div key={category} style={{ marginBottom: '20px' }}>
               <Paragraph strong style={{ marginBottom: 4 }}>
