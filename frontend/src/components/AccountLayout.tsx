@@ -1,9 +1,11 @@
-// src/components/AccountLayout.tsx
-import { useState } from "react";
+import React, { useState } from "react";
+import { Layout, Menu, Row, Col, Card, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import PersonalInfoForm from "./PersonalInfoForm";
 import VisaStatusPage from "./VisaStatus";
 import type { PersonalInfo } from "../types";
+
+const { Header, Content } = Layout;
 
 type ViewMode = "personal" | "visa";
 
@@ -17,56 +19,54 @@ export default function AccountLayout({ initialData, onSubmit }: Props) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // TODO: your logout logic (e.g. clear tokens)…
+    // TODO: your logout logic (e.g. clear tokens)...
     navigate("/login");
   };
 
+  const menuItems = [
+    { key: 'personal', label: 'Personal Info' },
+    { key: 'visa', label: 'Visa Status' },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* NAV BAR */}
-      <nav className="bg-white shadow">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setViewMode("personal")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "personal"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Personal Info
-            </button>
-            <button
-              onClick={() => setViewMode("visa")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "visa"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Visa Status
-            </button>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            Logout
-          </button>
-        </div>
-      </nav>
-      <main className="flex-grow container mx-auto px-4 py-6">
-        {viewMode === "personal" ? (
-          <PersonalInfoForm
-            initialData={initialData}
-            onSubmit={onSubmit}
-            disabled={false}
-          />
+    <Layout style={{ minHeight: '100vh' , minWidth: '100vw'}}>
+      <Header style={{ display: 'flex', alignItems: 'center', padding: '0 24px' }}>
+        <Menu
+          theme="dark"
+          mode="horizontal"
+          selectedKeys={[viewMode]}
+          items={menuItems}
+          onClick={({ key }) => setViewMode(key as ViewMode)}
+          style={{ flex: 1, background: 'transparent' }}
+        />
+        <Button type="primary" danger onClick={handleLogout}>
+          Logout
+        </Button>
+      </Header>
+
+      <Content style={{ padding: '24px', background: '#f0f2f5' }}>
+        {viewMode === 'personal' ? (
+          <Row justify="center" style={{ marginTop: 24 }}>
+            <Col xs={24} sm={20} md={16} lg={12} xl={10}>
+              <Card bordered={false} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                <PersonalInfoForm
+                  initialData={initialData}
+                  onSubmit={onSubmit}
+                  disabled={false}
+                />
+              </Card>
+            </Col>
+          </Row>
         ) : (
-          <VisaStatusPage />
+          <Row justify="center" style={{ marginTop: 24 }}>
+            <Col xs={24} sm={20} md={16} lg={12} xl={10}>
+              <Card bordered={false} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                <VisaStatusPage />
+              </Card>
+            </Col>
+          </Row>
         )}
-      </main>
-    </div>
+      </Content>
+    </Layout>
   );
 }

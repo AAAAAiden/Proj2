@@ -1,27 +1,36 @@
-// src/components/PersonalInfoForm.tsx
-import { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
-  PersonalInfo,
-  NameInfo,
-  AddressInfo,
-  ContactInfo,
-  EmploymentInfo,
-  EmergencyContact,
-  Document,
-  ImmigrationInfo
-} from "../types";
+  Form,
+  Input,
+  Button,
+  Divider,
+  Row,
+  Col,
+  Select,
+  Upload,
+  Space,
+  Typography,
+} from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import { PersonalInfo, ImmigrationInfo, Document } from "../types";
 
-
+const { Option } = Select;
+const { Title } = Typography;
 
 interface Props {
   initialData: PersonalInfo;
   onSubmit: (data: PersonalInfo) => void;
-  disabled?: boolean; 
+  disabled?: boolean;
 }
 
-export default function PersonalInfoForm({ initialData, onSubmit, disabled=false }: Props) {
+export default function PersonalInfoForm({
+  initialData,
+  onSubmit,
+  disabled = false,
+}: Props) {
   const [draft, setDraft] = useState<PersonalInfo>(initialData);
   const [isEditing, setIsEditing] = useState(false);
+
   useEffect(() => {
     setDraft(initialData);
   }, [initialData]);
@@ -32,52 +41,6 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
     setIsEditing(true);
   };
 
-
-  const handleIsResidentChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const isUS = e.target.value === "yes";
-    setDraft(prev => ({
-      ...prev,
-      immigration: {
-        // wipe out workAuth fields when switching back to resident
-        isUSResident: isUS,
-        residentStatus: isUS ? prev.immigration.residentStatus : undefined,
-        workAuthType: isUS ? undefined : prev.immigration.workAuthType,
-        otherVisaTitle: undefined,
-        optReceiptUrl: undefined,
-        authStartDate: undefined,
-        authEndDate: undefined,
-      }
-    }));
-  };
-
-
-  const handleImmigrationChange = (field: keyof ImmigrationInfo) =>
-  (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const value = e.target.type === "file"
-      ? undefined
-      : e.target.value;
-    setDraft(prev => ({
-      ...prev,
-      immigration: {
-        ...prev.immigration,
-        [field]: value,
-      } as any,
-    }));
-  };
-
-
-  const handleOptUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setDraft(prev => ({
-      ...prev,
-      immigration: {
-        ...prev.immigration,
-        optReceiptUrl: URL.createObjectURL(file),
-      }
-    }));
-  };
-  
   const cancelEdit = () => {
     if (window.confirm("Discard all changes?")) {
       setDraft(initialData);
@@ -85,468 +48,190 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
     }
   };
 
-  // Save: call parent and exit edit mode
   const saveEdit = () => {
     onSubmit(draft);
     setIsEditing(false);
   };
 
-  // Generic handler for nested fields
   const handleChange =
     <K extends keyof PersonalInfo>(section: K, field: string) =>
-    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setDraft((prev) => ({
         ...prev,
         [section]: {
           ...prev[section],
-          [field]: e.target.value,
+          [field]: (e.target as any).value,
         } as any,
       }));
     };
 
-  // Profile pic upload
-  const handlePicUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handlePicUpload = (file: File) => {
     setDraft((prev) => ({
       ...prev,
-      name: {
-        ...prev.name,
-        profilePicUrl: URL.createObjectURL(file),
-      },
+      name: { ...prev.name, profilePicUrl: URL.createObjectURL(file) },
+    }));
+    return false;
+  };
+
+  const handleOptUpload = (file: File) => {
+    setDraft((prev) => ({
+      ...prev,
+      immigration: { ...prev.immigration, optReceiptUrl: URL.createObjectURL(file) },
+    }));
+    return false;
+  };
+
+  const handleImmigrationSelect = (value: string, field: keyof ImmigrationInfo) => {
+    setDraft((prev) => ({
+      ...prev,
+      immigration: { ...prev.immigration, [field]: value } as any,
     }));
   };
 
-  // New document upload
-  const handleDocUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const addDocument = (file: File) => {
     const newDoc: Document = {
       id: `${Date.now()}`,
       name: file.name,
       url: URL.createObjectURL(file),
     };
-    setDraft((prev) => ({
-      ...prev,
-      documents: [...prev.documents, newDoc],
-    }));
+    setDraft((prev) => ({ ...prev, documents: [...prev.documents, newDoc] }));
+    return false;
   };
 
-
   return (
+    <Form layout="vertical" onFinish={saveEdit} style={{ background: "#fff", padding: 24, borderRadius: 8 }}>
+      <Form.Item>
+        <Space style={{ float: "right" }}>
+          {!isEditing ? (
+            <Button type="primary" onClick={startEdit} disabled={disabled}>
+              Edit
+            </Button>
+          ) : (
+            <>
+              <Button onClick={cancelEdit}>Cancel</Button>
+              <Button type="primary" htmlType="submit">
+                Save
+              </Button>
+            </>
+          )}
+        </Space>
+      </Form.Item>
 
-    <div className="space-y-4">
-
-{/* <div className="flex space-x-2">
-        {(["all", "personal", "auth"] as ViewMode[]).map((mode) => {
-          // label mapping
-          const label =
-            mode === "all"
-              ? "All"
-              : mode === "personal"
-              ? "Personal Info"
-              : "Work Auth";
-          const isActive = viewMode === mode;
-          return (
-            <button
-              key={mode}
-              type="button"
-              className={`px-4 py-2 rounded ${
-                isActive
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div> */}
-
-
-    <form
-      onSubmit={(e: FormEvent) => {
-        e.preventDefault();
-        saveEdit();
-      }}
-      className="space-y-8 p-8 bg-gray-100 rounded"
-    >
-      {/* Header buttons */}
-      <div className="flex justify-end space-x-2">
-        {!isEditing ? (
-          <button
-            type="button"
-            onClick={startEdit}
-            disabled={disabled}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Edit
-          </button>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="px-4 py-2 bg-gray-300 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded"
-            >
-              Save
-            </button>
-          </>
-        )}
-      </div>
-      {/* Name Section */}
-      <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Name</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(["firstName", "middleName", "lastName", "preferredName"] as const).map((field) => (
-            <div key={field}>
-              <label className="block text-sm capitalize">{field}</label>
-              <input
-                name={field}
-                value={draft.name[field]}
-                onChange={handleChange("name", field)}
-                disabled={!isEditing || disabled}
-                className="mt-1 w-full border rounded px-2 py-1"
-              />
-            </div>
-          ))}
-
-          {/* Profile picture */}
-          <div className="col-span-full">
-            <label className="block text-sm">Profile Picture</label>
+      <Divider orientation="left">Name</Divider>
+      <Row gutter={16}>
+        <Col span={12}>
+          <Form.Item label="First Name">
+            <Input value={draft.name.firstName} disabled={!isEditing || disabled} onChange={handleChange("name", "firstName")} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label="Last Name">
+            <Input value={draft.name.lastName} disabled={!isEditing || disabled} onChange={handleChange("name", "lastName")} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label="Preferred Name">
+            <Input value={draft.name.preferredName} disabled={!isEditing || disabled} onChange={handleChange("name", "preferredName")} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label="Profile Picture">
             {isEditing ? (
-              <input type="file" onChange={handlePicUpload} className="mt-1" />
+              <Upload beforeUpload={(f) => handlePicUpload(f)} showUploadList={false}>
+                <Button icon={<UploadOutlined />} disabled={!isEditing}>Upload</Button>
+              </Upload>
             ) : (
-              draft.name.profilePicUrl && (
-                <img
-                  src={draft.name.profilePicUrl}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full mt-2"
-                />
-              )
+              draft.name.profilePicUrl && <img src={draft.name.profilePicUrl} alt="Profile" style={{ width: 96, height: 96, borderRadius: '50%' }} />
             )}
-          </div>
+          </Form.Item>
+        </Col>
+      </Row>
 
-          {/* Email, SSN, DOB, Gender */}
-          <div>
-            <label className="block text-sm">Email</label>
-            <input
-              name="email"
-              type="email"
-              value={draft.name.email}
-              onChange={handleChange("name", "email")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">SSN</label>
-            <input
-              name="ssn"
-              value={draft.name.ssn}
-              onChange={handleChange("name", "ssn")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">Date of Birth</label>
-            <input
-              name="dob"
-              type="date"
-              value={draft.name.dob}
-              onChange={handleChange("name", "dob")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">Gender</label>
-            <select
-              name="gender"
-              value={draft.name.gender}
-              onChange={handleChange("name", "gender")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            >
-              <option>Male</option>
-              <option>Female</option>
-              <option>Other</option>
-            </select>
-          </div>
-        </div>
-      </fieldset>
+      <Divider orientation="left">Contact Info</Divider>
+      <Row gutter={16}>
+        <Col span={12}>
+          <Form.Item label="Cell Phone">
+            <Input value={draft.contact.cell} disabled={!isEditing || disabled} onChange={handleChange("contact", "cell")} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label="Work Phone">
+            <Input value={draft.contact.work} disabled={!isEditing || disabled} onChange={handleChange("contact", "work")} />
+          </Form.Item>
+        </Col>
+      </Row>
 
-      {/* Address Section */}
-      <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Address</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(["building", "street", "city", "state", "zip"] as const).map((field) => (
-            <div key={field}>
-              <label className="block text-sm capitalize">{field}</label>
-              <input
-                name={field}
-                value={draft.address[field]}
-                onChange={handleChange("address", field)}
-                disabled={!isEditing || disabled}
-                className="mt-1 w-full border rounded px-2 py-1"
-              />
-            </div>
-          ))}
-        </div>
-      </fieldset>
+      <Divider orientation="left">U.S. Status & Work Authorization</Divider>
+      <Row gutter={16}>
+        <Col span={12}>
+          <Form.Item label="Resident Status">
+            <Select value={draft.immigration.isUSResident ? 'yes' : 'no'} onChange={(v) => handleImmigrationSelect(v, 'isUSResident')} disabled={!isEditing}>
+              <Option value="yes">Yes</Option>
+              <Option value="no">No</Option>
+            </Select>
+          </Form.Item>
+        </Col>
+        {!draft.immigration.isUSResident ? (
+          <Col span={12}>
+            <Form.Item label="Work Authorization">
+              <Select value={draft.immigration.workAuthType} onChange={(v) => handleImmigrationSelect(v, 'workAuthType')} disabled={!isEditing}>
+                <Option value="H1-B">H1-B</Option>
+                <Option value="L2">L2</Option>
+                <Option value="F1">F1</Option>
+                <Option value="H4">H4</Option>
+                <Option value="Other">Other</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+        ) : null}
+      </Row>
 
-      {/* Contact Info */}
-      <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Contact Info</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm">Cell Phone</label>
-            <input
-              name="cell"
-              type="tel"
-              value={draft.contact.cell}
-              onChange={handleChange("contact", "cell")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">Work Phone</label>
-            <input
-              name="work"
-              type="tel"
-              value={draft.contact.work}
-              onChange={handleChange("contact", "work")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-        </div>
-      </fieldset>
+      {draft.immigration.workAuthType === 'F1' && (
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item label="OPT Receipt">
+              <Upload beforeUpload={(f) => handleOptUpload(f)} showUploadList={false}>
+                <Button icon={<UploadOutlined />} disabled={!isEditing}>Upload PDF</Button>
+              </Upload>
+            </Form.Item>
+          </Col>
+          {draft.immigration.optReceiptUrl && (
+            <Col span={12}>
+              <a href={draft.immigration.optReceiptUrl} target="_blank" rel="noopener noreferrer">
+                Preview OPT Receipt
+              </a>
+            </Col>
+          )}
+        </Row>
+      )}
 
-      {/* Employment */}
-      <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Employment</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm">Visa Title</label>
-            <input
-              name="visaTitle"
-              value={draft.employment.visaTitle}
-              onChange={handleChange("employment", "visaTitle")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">Start Date</label>
-            <input
-              name="startDate"
-              type="date"
-              value={draft.employment.startDate}
-              onChange={handleChange("employment", "startDate")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">End Date</label>
-            <input
-              name="endDate"
-              type="date"
-              value={draft.employment.endDate}
-              onChange={handleChange("employment", "endDate")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-        </div>
-      </fieldset>
-
-      {/* Emergency Contact */}
-      <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Emergency Contact</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(["firstName", "lastName", "phone", "email", "relationship"] as const).map((field) => (
-            <div key={field}>
-              <label className="block text-sm capitalize">{field}</label>
-              <input
-                name={field}
-                value={(draft.emergency as any)[field]}
-                onChange={handleChange("emergency", field)}
-                disabled={!isEditing || disabled}
-                className="mt-1 w-full border rounded px-2 py-1"
-              />
-            </div>
-          ))}
-        </div>
-      </fieldset>
-
-
-
-      <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">
-          U.S. Status & Work Authorization
-        </legend>
-
-        {/* 1. Are you a U.S. resident or citizen? */}
-        <div>
-          <label className="block text-sm font-medium">
-            Permanent resident or citizen of the U.S.?
-          </label>
-          <select
-            value={draft.immigration.isUSResident ? "yes" : "no"}
-            onChange={handleIsResidentChange}
-            disabled={!isEditing}
-            className="mt-1 w-full border rounded px-2 py-1"
-          >
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
-
-        {draft.immigration.isUSResident ? (
-          /* if Yes → choose Green Card or Citizen */
-          <div>
-            <label className="block text-sm font-medium">
-              Status
-            </label>
-            <select
-              value={draft.immigration.residentStatus}
-              onChange={handleImmigrationChange("residentStatus")}
-              disabled={!isEditing}
-              className="mt-1 w-full border rounded px-2 py-1"
-            >
-              <option>Green Card</option>
-              <option>Citizen</option>
-            </select>
-          </div>
-        ) : (
-          /* if No → work authorization flow */
-          <>
-            <div>
-              <label className="block text-sm font-medium">
-                What is your work authorization?
-              </label>
-              <select
-                value={draft.immigration.workAuthType}
-                onChange={handleImmigrationChange("workAuthType")}
-                disabled={!isEditing}
-                className="mt-1 w-full border rounded px-2 py-1"
-              >
-                <option>H1-B</option>
-                <option>L2</option>
-                <option>F1</option>
-                <option>H4</option>
-                <option>Other</option>
-              </select>
-            </div>
-
-            {/* F1 → upload OPT receipt */}
-            {draft.immigration.workAuthType === "F1" && (
-              <div>
-                <label className="block text-sm font-medium">
-                  Upload OPT Receipt
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleOptUpload}
-                  disabled={!isEditing}
-                  className="mt-1"
-                />
-                {draft.immigration.optReceiptUrl && (
-                  <a
-                    href={draft.immigration.optReceiptUrl}
-                    target="_blank"
-                    rel="noopener"
-                    className="mt-2 inline-block underline"
-                  >
-                    Preview OPT Receipt
+      <Divider orientation="left">Documents</Divider>
+      <Row>
+        <Col span={24}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            {draft.documents.map((doc) => (
+              <Space key={doc.id} style={{ justifyContent: 'space-between', width: '100%' }}>
+                <span>{doc.name}</span>
+                <Space>
+                  <a href={doc.url} download>
+                    Download
                   </a>
-                )}
-              </div>
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                    Preview
+                  </a>
+                </Space>
+              </Space>
+            ))}
+            {isEditing && (
+              <Upload beforeUpload={(f) => addDocument(f)} showUploadList={false}>
+                <Button icon={<UploadOutlined />} disabled={!isEditing}>
+                  Add Document
+                </Button>
+              </Upload>
             )}
-
-            {/* Other → specify visa title */}
-            {draft.immigration.workAuthType === "Other" && (
-              <div>
-                <label className="block text-sm font-medium">
-                  Please specify visa title
-                </label>
-                <input
-                  type="text"
-                  value={draft.immigration.otherVisaTitle}
-                  onChange={handleImmigrationChange("otherVisaTitle")}
-                  disabled={!isEditing}
-                  className="mt-1 w-full border rounded px-2 py-1"
-                />
-              </div>
-            )}
-
-            {/* common start/end dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={draft.immigration.authStartDate}
-                  onChange={handleImmigrationChange("authStartDate")}
-                  disabled={!isEditing}
-                  className="mt-1 w-full border rounded px-2 py-1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={draft.immigration.authEndDate}
-                  onChange={handleImmigrationChange("authEndDate")}
-                  disabled={!isEditing}
-                  className="mt-1 w-full border rounded px-2 py-1"
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </fieldset>
-        
-            
-      {/* Documents */}
-      <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Documents</legend>
-        <div className="space-y-2">
-          {draft.documents.map((doc) => (
-            <div key={doc.id} className="flex justify-between items-center">
-              <span>{doc.name}</span>
-              <div className="space-x-2">
-                <a href={doc.url} download className="underline">
-                  Download
-                </a>
-                <a href={doc.url} target="_blank" rel="noopener" className="underline">
-                  Preview
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-        {isEditing && (
-          <input type="file" onChange={handleDocUpload} className="mt-2" />
-        )}
-      </fieldset>
-
-    </form>
-    </div>
+          </Space>
+        </Col>
+      </Row>
+    </Form>
   );
 }

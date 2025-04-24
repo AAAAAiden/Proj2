@@ -62,22 +62,34 @@ const SignIn: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: 'auto', paddingTop: 100 }}>
-      <Title level={2}>Sign In</Title>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',   
+        width:'100vw',        // make container full viewport height
+        padding: '0 16px',         // optional horizontal padding
+        background: '#f0f2f5',     // optional background to match Ant default
+      }}
+    >
+      <div style={{ width: 400 }}>
+        <Title level={2} style={{ textAlign: 'center' }}>Sign In</Title>
 
-      <GlobalMessageBanner />
+        <GlobalMessageBanner />
 
-      <Form layout="vertical" onFinish={onFinish}>
-        <Form.Item label="Email" name="email" rules={[{ required: true }]}>
-          <Input onChange={handleInputChange} />
-        </Form.Item>
-        <Form.Item label="Password" name="password" rules={[{ required: true }]}>
-          <Input.Password onChange={handleInputChange} />
-        </Form.Item>
-        <Button type="primary" htmlType="submit" block loading={loading}>
-          Sign In
-        </Button>
-      </Form>
+        <Form layout="vertical" onFinish={onFinish}>
+          <Form.Item label="Email" name="email" rules={[{ required: true }]}>
+            <Input onChange={handleInputChange} />
+          </Form.Item>
+          <Form.Item label="Password" name="password" rules={[{ required: true }]}>
+            <Input.Password onChange={handleInputChange} />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" block loading={loading}>
+            Sign In
+          </Button>
+        </Form>
+      </div>
     </div>
   );
 };
