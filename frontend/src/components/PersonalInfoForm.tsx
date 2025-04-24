@@ -39,11 +39,11 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
     setDraft(prev => {
       // copy existing docs
       const docs = [...prev.documents];
-      for (const { id, label } of docSlots) {
-        if (!docs.some(d => d.id === id)) {
-          docs.push({ id, name: label, url: "" });
-        }
-      }
+      // for (const { id, label } of docSlots) {
+      //   if (!docs.some(d => d.id === id)) {
+      //     docs.push({ id, name: label, url: "" });
+      //   }
+      // }
       return { ...prev, documents: docs };
     });
   }, [initialData]);

@@ -53,6 +53,7 @@ const defaultInfo: PersonalInfo = {
   },
 };
 
+
 const EmployeeDashboard: React.FC = () => {
   const token = useAppSelector((state) => state.auth.token);
   const userId = useAppSelector((state) => state.auth.id);
@@ -63,6 +64,7 @@ const EmployeeDashboard: React.FC = () => {
     { key: "personal", label: "Personal Info" },
     { key: "visa", label: "Visa Status" },
   ];
+
 
   useEffect(() => {
     const fetch = async () => {
@@ -114,7 +116,10 @@ const EmployeeDashboard: React.FC = () => {
       {viewMode === "personal" ? (
         <PersonalInfoForm initialData={info} onSubmit={handleUpdate} disabled={false} />
       ) : (
-        <VisaStatusPage />
+        <VisaStatusPage
+        userId={userId}
+        onNotOpt={() => setViewMode('personal')}
+      />
       )}
     </MainLayout>
   );

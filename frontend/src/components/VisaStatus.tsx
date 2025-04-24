@@ -1,225 +1,141 @@
-import { useState, useEffect, ChangeEvent } from "react";
+// src/components/VisaStatus.tsx
+import React, { useEffect, useState, ChangeEvent } from 'react';
+import axios from 'axios';
+import { api } from '../api';
 
-type DocStatus = "pending" | "approved" | "rejected";
+type Status = 'Pending' | 'Approved' | 'Rejected';
 
-interface VisaDocStatus {
-  status: DocStatus;
-  feedback?: string; 
+interface VisaDocument {
+  path: string;
+  status: Status;
+  feedback: string;
 }
 
 interface VisaStatusData {
-  visaType: "OPT" | string;
-  receipt: VisaDocStatus;
-  ead: VisaDocStatus;
-  i983: VisaDocStatus;
-  i20: VisaDocStatus;
+  optReceipt?: VisaDocument;
+  optEAD?: VisaDocument;
+  i983?: VisaDocument;
+  i20?: VisaDocument;
 }
 
-export default function VisaStatusPage() {
-  const [data, setData] = useState<VisaStatusData | null>(null);
+interface Props {
+  userId: string;
+  onNotOpt?: () => void; // optional callback if not OPT
+}
+
+const VisaStatus: React.FC<Props> = ({ userId, onNotOpt }) => {
+  const [visa, setVisa] = useState<VisaStatusData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>();
 
-  
+  // load visa‐status on mount
   useEffect(() => {
-    async function fetchStatus() {
-      try {
-        // TODO: API for visa-status
-        const res = await fetch("/api/visa-status");
-        const json: VisaStatusData = await res.json();
-        setData(json);
-      } catch (e: any) {
-        setError("Unable to load visa status.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchStatus();
-  }, []);
+    api.get<VisaStatusData>(`/api/visa-status/${userId}`)
+      .then(res => {
+        if (!res.data.optReceipt) {
+          // not OPT user
+          onNotOpt?.();
+        } else {
+          setVisa(res.data);
+        }
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [userId, onNotOpt]);
 
-  async function handleUpload(
-    step: keyof Omit<VisaStatusData, "visaType">,
-    file: File
-  ) {
-    if (!data) return;
+  const upload = (stage: keyof VisaStatusData) => async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
     const form = new FormData();
-    form.append("file", file);
-    form.append("step", step);
-    await fetch("/api/visa-upload", { method: "POST", body: form });
-    setLoading(true);
-    setError(null);
-    const res = await fetch("/api/visa-status");
-    const json: VisaStatusData = await res.json();
-    setData(json);
-    setLoading(false);
-  }
+    form.append('file', e.target.files[0]);
+    try {
+      await api.post(`/api/visa-status/${userId}/${stage}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      // refresh
+      const updated = await api.get<VisaStatusData>(`/api/visa-status/${userId}`);
+      setVisa(updated.data);
+    } catch (err: any) {
+      alert('Upload failed: ' + err.message);
+    }
+  };
 
-  if (loading) return <p className="p-4">Loading…</p>;
-  if (error) return <p className="p-4 text-red-600">{error}</p>;
-  if (data!.visaType !== "OPT") {
-    return (
-      <p className="p-4 text-gray-600">
-        No OPT documents to manage for your visa type.
-      </p>
-    );
-  }
+  if (loading)   return <p>Loading…</p>;
+  if (error)     return <p className="error">Error: {error}</p>;
+  if (!visa)     return <p>fail to get a visa status</p>;
 
-  const { receipt, ead, i983, i20 } = data!;
+  // helper to render each card
+  const renderStage = (
+    label: string,
+    doc: VisaDocument | undefined,
+    nextLabel: string,
+    
+    uploadHandler?: (e: ChangeEvent<HTMLInputElement>) => void
+  ) => (
+    <div className="visa-stage">
+      <h4>{label}</h4>
+      {doc ? (
+        <>
+          <p>Status: <strong>{doc.status}</strong></p>
+          {doc.status === 'Pending' && <p>Waiting for HR to approve your {label.toLowerCase()}.</p>}
+          {doc.status === 'Approved' && <p>{nextLabel}</p>}
+          {doc.status === 'Rejected' && <p className="feedback">HR Feedback: {doc.feedback}</p>}
+        </>
+      ) : (
+        <p>Not yet submitted</p>
+      )}
 
-
-  const canUploadEad = receipt.status === "approved";
-  const canUploadI983 = ead.status === "approved";
-  const canUploadI20 = i983.status === "approved";
-
-  function StepCard(props: {
-    title: string;
-    status: DocStatus;
-    feedback?: string;
-    disabledUpload: boolean;
-    onFileChange?: (e: ChangeEvent<HTMLInputElement>) => void;
-    uploadLabel: string;
-    children?: React.ReactNode;
-  }) {
-    const { title, status, feedback, disabledUpload, onFileChange, uploadLabel, children } = props;
-    const badgeColor =
-      status === "approved"
-        ? "bg-green-100 text-green-800"
-        : status === "pending"
-        ? "bg-yellow-100 text-yellow-800"
-        : "bg-red-100 text-red-800";
-
-    return (
-      <div className="mb-6 p-6 border rounded shadow-sm bg-white">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <span className={`px-2 py-1 rounded text-sm ${badgeColor}`}>
-            {status.toUpperCase()}
-          </span>
-        </div>
-
-        {/* Status‐specific message */}
-        {status === "pending" && (
-          <p className="mb-4 opacity-80">
-            {title.includes("Receipt")
-              ? "Waiting for HR to approve your OPT Receipt."
-              : title.includes("EAD")
-              ? "Waiting for HR to approve your OPT EAD."
-              : title.includes("I-983")
-              ? "Waiting for HR to approve and sign your I-983."
-              : "Waiting for HR to approve your I-20."}
-          </p>
-        )}
-
-        {status === "approved" && (
-          <p className="mb-4 font-medium">
-            {title.includes("Receipt")
-              ? "Please upload a copy of your OPT EAD."
-              : title.includes("EAD")
-              ? "Please download and fill out the I-983 form below."
-              : title.includes("I-983")
-              ? "Please send the I-983 with all necessary documents to your school, then upload the new I-20."
-              : "All documents have been approved!"}
-          </p>
-        )}
-
-        {status === "rejected" && (
-          <p className="mb-4 text-red-600">
-            <strong>HR Feedback:</strong> {feedback}
-          </p>
-        )}
-
-        {children}
-        
-        {onFileChange && (
-          <div className="mt-4">
-            <input
-              type="file"
-              accept="application/pdf"
-              disabled={disabledUpload}
-              onChange={onFileChange}
-              className={`${
-                disabledUpload
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-            />
-            {!disabledUpload && (
-              <p className="mt-1 text-sm text-gray-500">{uploadLabel}</p>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">Visa Status Management</h1>
-
-      {/* 1) OPT Receipt (no upload here; it was submitted in onboarding) */}
-      <StepCard
-        title="OPT Receipt"
-        status={receipt.status}
-        feedback={receipt.feedback}
-        disabledUpload={true}
-        uploadLabel="No upload required for OPT Receipt"
-      />
-
-      {/* 2) OPT EAD */}
-      <StepCard
-        title="OPT EAD"
-        status={ead.status}
-        feedback={ead.feedback}
-        disabledUpload={!canUploadEad}
-        onFileChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleUpload("ead", file);
-        }}
-        uploadLabel="Upload your OPT EAD (PDF)"
-      />
-
-      {/* 3) I-983: show templates + upload */}
-      <StepCard
-        title="I-983"
-        status={i983.status}
-        feedback={i983.feedback}
-        disabledUpload={!canUploadI983}
-        onFileChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleUpload("i983", file);
-        }}
-        uploadLabel="Upload your completed I-983 form"
-      >
-        <div className="flex space-x-4 mb-2">
-          <a
-            href="/templates/983-empty.pdf"
-            download
-            className="underline text-blue-600"
-          >
-            Download Empty Template
-          </a>
-          <a
-            href="/templates/983-sample.pdf"
-            download
-            className="underline text-blue-600"
-          >
-            Download Sample Template
-          </a>
-        </div>
-      </StepCard>
-
-      {/* 4) I-20 */}
-      <StepCard
-        title="I-20"
-        status={i20.status}
-        feedback={i20.feedback}
-        disabledUpload={!canUploadI20}
-        onFileChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleUpload("i20", file);
-        }}
-        uploadLabel="Upload your new I-20 (PDF)"
-      />
+      {/* show upload if allowed */}
+      {(doc?.status === 'Approved' || !doc) && uploadHandler && (
+        <input type="file" accept="application/pdf,image/*" onChange={uploadHandler} />
+      )}
     </div>
   );
-}
+
+  return (
+    <div className="visa-status-container">
+      {/** 1) OPT Receipt is already in “Pending” from onboarding */}
+      {renderStage(
+        'OPT Receipt',
+        visa.optReceipt,
+        'Waiting for HR to approve your OPT Receipt',
+        // since Receipt was submitted in onboarding, we typically don’t re‐upload here
+        undefined
+      )}
+
+      {/** 2) OPT EAD */}
+      {visa.optReceipt?.status === 'Approved' && renderStage(
+        'OPT EAD',
+        visa.optEAD,
+        'Please download & fill out the I-983 form',
+        upload('optEAD')
+      )}
+      {visa.optReceipt?.status !== 'Approved' && (
+        <p className="hint">You must wait for OPT Receipt approval before uploading EAD.</p>
+      )}
+
+      {/** 3) I-983 */}
+      {visa.optEAD?.status === 'Approved' && renderStage(
+        'I-983',
+        visa.i983,
+        'Please upload your Form I-20',
+        upload('i983')
+      )}
+      {visa.optEAD?.status !== 'Approved' && visa.optReceipt?.status === 'Approved' && (
+        <p className="hint">You must wait for OPT EAD approval before filling out I-983.</p>
+      )}
+
+      {/** 4) I-20 */}
+      {visa.i983?.status === 'Approved' && renderStage(
+        'I-20',
+        visa.i20,
+        'All done!',
+        upload('i20')
+      )}
+      {visa.i983?.status !== 'Approved' && visa.optEAD?.status === 'Approved' && (
+        <p className="hint">You must wait for I-983 approval before uploading I-20.</p>
+      )}
+    </div>
+  );
+};
+
+export default VisaStatus;
