@@ -13,7 +13,8 @@ import ViewApplication from './pages/HR/ViewApplication';
 import SummaryProfile from './pages/HR/EmployeeProfile';
 import EmployeePage from './pages/EmployeePage';
 import ViewEmployeeProfilePage from './pages/HR/ViewEmployeeProfile';
-
+import VisaReviewPage from './pages/HR/VisaStatusSummaryPage';
+import VisaReviewDetailPage from './pages/HR/VisaReviewDetailPage';
 
 const App = () => {
   const dispatch = useAppDispatch();
@@ -40,9 +41,11 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/hr/token" element={<RequireHR><GenerateToken /></RequireHR>} />
         <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="/employee" element={<EmployeePage />} />
+        <Route path="/employee/*" element={<EmployeePage />} />
         <Route path="/hr/review" element={<RequireHR><OnboardingReview /></RequireHR>} />
         <Route path="/hr/profiles" element={<RequireHR><SummaryProfile /></RequireHR>} />
+        <Route path="/hr/visa" element={<RequireHR><VisaReviewPage /></RequireHR>} />
+        <Route path="/hr/visa-review/:userId" element={ <RequireHR><VisaReviewDetailPage /></RequireHR>}/>
         <Route path="/hr/profile/:id" element={<ViewEmployeeProfilePage />} />
         <Route path="/hr/view-application/:userId" element={<RequireHR><ViewApplication /></RequireHR>} />
         <Route path="*" element={<Oops />} />

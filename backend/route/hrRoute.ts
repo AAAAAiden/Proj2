@@ -8,7 +8,7 @@ import {
 
 // Visa controller
 import {
-  reviewDocument,
+  reviewDocument, getVisaSummary, getVisaStatus
 } from '../controller/visaController.js';
 
 // Onboarding controller
@@ -34,6 +34,12 @@ router.put('/visas/review', reviewDocument);
 router.post('/hiring/token', generateRegistrationToken);
 
 router.get('/hiring/token', listRegistrationTokens);
+
+router.get('/visa-summary', getVisaSummary);
+
+router.get('/visa-status/:userId', getVisaStatus);
+
+router.put('/visa-status/review', reviewDocument);
 
 router.get('/hiring/applications/:status', listApplicationsByStatus);
 

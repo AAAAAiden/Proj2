@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-type Status = 'Pending' | 'Approved' | 'Rejected';
+type Status = 'Not Submitted' | 'Pending' | 'Approved' | 'Rejected';
 
 interface VisaDocument {
   path: string;
@@ -17,8 +17,8 @@ export interface IVisaStatus extends Document {
 }
 
 const visaDocSchema = new Schema<VisaDocument>({
-  path: { type: String, required: true },
-  status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], required: true },
+  path: { type: String, required: false },
+  status: { type: String, enum: ['Not Submitted', 'Pending', 'Approved', 'Rejected'], required: true },
   feedback: { type: String, default: '' },
 }, { _id: false });
 

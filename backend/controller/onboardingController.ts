@@ -7,6 +7,7 @@ import { sendRegistrationEmail } from '../util/emailService.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { IUserDocument } from '../model/User.js';
 import Employee from '../model/Employee.js';
+import VisaStatus from '../model/Visa.js';
 
 // Employee: Submit onboarding application
 export const submitOnboarding = async (req: Request, res: Response): Promise<any> => {
@@ -82,7 +83,7 @@ export const approveOnboarding = async (req: Request, res: Response): Promise<vo
     const app = await OnboardingApp.findOneAndUpdate(
       { userId, status: 'Pending' },
       { status: 'Approved' },
-      { new: true }
+      { new: true },
     );
 
     if (!app) {
@@ -106,48 +107,72 @@ export const approveOnboarding = async (req: Request, res: Response): Promise<vo
             path: doc.url, // Use url as path for now
           }))
       : [];
+    const existingEmployee = await Employee.findOne({ userId: app.userId });
+    let newEmployee;
 
-    // Create Employee document
-    const newEmployee = new Employee({
-      userId: app.userId,
-      name: {
-        firstName: form.name.firstName || '',
-        lastName: form.name.lastName || '',
-        middleName: form.name.middleName || '',
-        preferredName: form.name.preferredName || '',
-        email: form.name.email || ''
-      },
-      profilePicture: form.name.profilePicUrl || '',
-      contactInfo: {
-        cellPhone: form.contact.cell || '',
-        workPhone: form.contact.work || '',
-      },
-      address: {
-        building: form.address.building || '',
-        street: form.address.street || '',
-        city: form.address.city || '',
-        state: form.address.state || '',
-        zip: form.address.zip || '',
-      },
-      ssn: form.name.ssn || '',
-      dateOfBirth: form.name.dob || '',
-      gender: form.name.gender || 'prefer_not_to_say',
-      workAuth: {
-        citizenshipStatus: form.immigration?.isUSResident ? 'Citizen' : 'Visa',
-        visaTitle: form.employment?.visaTitle || '',
-        visaType: form.immigration?.workAuthType || '',
-        otherTitle: form.immigration?.otherVisaTitle || '',
-        startDate: form.immigration?.authStartDate || '',
-        endDate: form.immigration?.authEndDate || '',
-        optReceiptPath: form.immigration?.optReceiptUrl || '',
-      },
-      reference: form.references,
-      emergencyContacts: [form.emergency],
-      documents,
-    });
+    if (existingEmployee) {
+        res.status(409).json({ message: 'Employee already exists for this userId' });
+        return;
+    } else {
+      const newEmployee = new Employee({
+        userId: app.userId,
+        name: {
+          firstName: form.name.firstName || '',
+          lastName: form.name.lastName || '',
+          middleName: form.name.middleName || '',
+          preferredName: form.name.preferredName || '',
+          email: form.name.email || ''
+        },
+        profilePicture: form.name.profilePicUrl || '',
+        contactInfo: {
+          cellPhone: form.contact.cell || '',
+          workPhone: form.contact.work || '',
+        },
+        address: {
+          building: form.address.building || '',
+          street: form.address.street || '',
+          city: form.address.city || '',
+          state: form.address.state || '',
+          zip: form.address.zip || '',
+        },
+        ssn: form.name.ssn || '',
+        dateOfBirth: form.name.dob || '',
+        gender: form.name.gender || 'prefer_not_to_say',
+        workAuth: {
+          citizenshipStatus: form.immigration?.isUSResident ? 'Citizen' : 'Visa',
+          visaTitle: form.employment?.visaTitle || '',
+          visaType: form.immigration?.workAuthType || '',
+          otherTitle: form.immigration?.otherVisaTitle || '',
+          startDate: form.immigration?.authStartDate || '',
+          endDate: form.immigration?.authEndDate || '',
+          optReceiptPath: form.immigration?.optReceiptUrl || '',
+        },
+        reference: form.references,
+        emergencyContacts: [form.emergency],
+        documents,
+      });
+  
+      await newEmployee.save();
 
-    await newEmployee.save();
-
+      if (form.immigration?.workAuthType === 'F1') {
+        const hasReceipt = form.immigration?.optReceiptUrl?.trim();
+      
+        await VisaStatus.create({
+          userId: app.userId,
+          optReceipt: {
+            path: hasReceipt || '',
+            status: hasReceipt ? 'Pending' : 'Not Submitted',
+            feedback: '',
+          },
+          optEAD: { status: 'Not Submitted', feedback: '' },
+          i983: { status: 'Not Submitted', feedback: '' },
+          i20: { status: 'Not Submitted', feedback: '' },
+        });
+      
+        console.log(`VisaStatus document created for F1 user: ${app.userId}, OPT Receipt status: ${hasReceipt ? 'Pending' : 'Not Submitted'}`);
+      }
+    } 
+    
     res.status(201).json({
       message: 'Application approved and employee created',
       application: app,

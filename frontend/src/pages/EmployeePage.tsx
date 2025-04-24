@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { useAppSelector } from "../hooks";
 import axios from "axios";
 import MainLayout from "../components/MainLayout";
+import { Tabs, Typography, Spin, message } from "antd";
 import PersonalInfoForm from "../components/PersonalInfoForm";
-import VisaStatusPage from "../components/VisaStatus";
+import VisaStatus from "../components/VisaStatus";
 import { PersonalInfo } from "../types";
+
+const { Title } = Typography;
+const { TabPane } = Tabs;
 
 const defaultInfo: PersonalInfo = {
   name: {
@@ -54,18 +58,12 @@ const defaultInfo: PersonalInfo = {
   },
 };
 
-
 const EmployeeDashboard: React.FC = () => {
   const token = useAppSelector((state) => state.auth.token);
   const userId = useAppSelector((state) => state.auth.id);
   const [info, setInfo] = useState<PersonalInfo | null>(null);
-  const [viewMode, setViewMode] = useState<"personal" | "visa">("personal");
-
-  const navItems = [
-    { key: "personal", label: "Personal Info" },
-    { key: "visa", label: "Visa Status" },
-  ];
-
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'personal' | 'visa'>('personal');
 
   useEffect(() => {
     const fetch = async () => {
@@ -86,6 +84,8 @@ const EmployeeDashboard: React.FC = () => {
         setInfo(merged);
       } catch (err) {
         console.error("Failed to fetch onboarding data", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetch();
@@ -100,28 +100,46 @@ const EmployeeDashboard: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      message.success("Profile updated successfully.");
     } catch (err) {
       console.error("Failed to update onboarding data", err);
+      message.error("Update failed.");
     }
   };
 
-  if (!info) return <div>Loading...</div>;
-
   return (
     <MainLayout
-      title="Employee Home Page"
-      navItems={navItems}
-      selectedKey={viewMode}
-      onNavClick={(key) => setViewMode(key as "personal" | "visa")}
+      title="Employee Dashboard"
+      navItems={[
+        { key: 'personal', label: 'Personal Info' },
+        { key: 'visa', label: 'Visa Status' },
+      ]}
+      selectedKey={activeTab}
+      onNavClick={(key) => setActiveTab(key as 'personal' | 'visa')}
     >
-      {viewMode === "personal" ? (
-        <PersonalInfoForm initialData={info} onSubmit={handleUpdate} disabled={false} />
-      ) : (
-        <VisaStatusPage
-        userId={userId}
-        onNotOpt={() => setViewMode('personal')}
-      />
-      )}
+      <div style={{ padding: 40 }}>
+        <Title level={3}>Welcome</Title>
+        {loading ? (
+          <Spin />
+        ) : (
+          <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as 'personal' | 'visa')}>
+            <TabPane tab="Personal Info" key="personal">
+              {info && <PersonalInfoForm initialData={info} onSubmit={handleUpdate} />}
+            </TabPane>
+            <TabPane tab="Visa Status" key="visa">
+              {userId && (
+                <VisaStatus
+                  userId={userId}
+                  onNotOpt={() => {
+                    message.info('Visa tracking only applies to F1 visa holders.');
+                    setActiveTab('personal');
+                  }}
+                />
+              )}
+            </TabPane>
+          </Tabs>
+        )}
+      </div>
     </MainLayout>
   );
 };

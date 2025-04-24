@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import VisaStatus from '../model/Visa.js';
+import Employee, {IEmployee} from '../model/Employee.js';
+
 
 // GET visa status for a user
 export const getVisaStatus = async (req: Request, res: Response): Promise<void> => {
@@ -151,5 +153,46 @@ export const reviewDocument = async (req: Request, res: Response): Promise<void>
     res.json({ message: `${docType} ${action}d successfully` });
   } catch (error) {
     res.status(500).json({ message: 'Review failed', error });
+  }
+};
+
+type VisaDocumentKey = 'optReceipt' | 'optEAD' | 'i983' | 'i20';
+
+export const getVisaSummary = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const visaStatuses = await VisaStatus.find();
+    const userIds = visaStatuses.map(v => v.userId);
+    const employees = await Employee.find({ userId: { $in: userIds } }) as IEmployee[];
+
+    const result = visaStatuses.map((visa) => {
+      const employee = employees.find(e => e.userId.toString() === visa.userId.toString());
+
+      const name = employee
+        ? `${employee.name?.firstName || ''} ${employee.name?.lastName || ''}`.trim()
+        : 'Unknown';
+
+      const email = employee?.name.email || 'N/A';
+
+      const stages: VisaDocumentKey[] = ['optReceipt', 'optEAD', 'i983', 'i20'];
+      const firstPending = stages.find(key => visa[key]?.status === 'Pending');
+      const lastApproved = [...stages].reverse().find(key => visa[key]?.status === 'Approved');
+      const visaStage = firstPending
+        ? `${firstPending}: Pending`
+        : lastApproved
+        ? `${lastApproved}: Approved`
+        : 'Not Submitted';
+
+      return {
+        userId: visa.userId,
+        name,
+        email,
+        visaStage,
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error in getVisaSummary:', error);
+    res.status(500).json({ message: 'Failed to retrieve visa summaries' });
   }
 };

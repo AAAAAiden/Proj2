@@ -16,16 +16,14 @@ const upload = multer({ dest: 'uploads/' });
 
 router.use(checkToken, checkRole(['employee']));
 
-router.get('/status', getVisaStatus);
+router.get('/visa-status/:userId', getVisaStatus);
 
-router.post('/upload/opt-receipt', upload.single('file'), uploadOPTReceipt);
+router.post('/visa-status/upload/optReceipt', upload.single('file'), uploadOPTReceipt);
 
-router.post('/upload/opt-ead', upload.single('file'), uploadOPTEAD);
+router.post('/visa-status/upload/optEad', upload.single('file'), uploadOPTEAD);
 
-router.post('/upload/i983', upload.single('file'), uploadI983);
+router.post('/visa-status/upload/i983', upload.single('file'), uploadI983);
 
-router.post('/upload/i20', upload.single('file'), uploadI20);
-
-router.put('/review', checkToken, checkRole(['hr']), reviewDocument);
+router.post('/visa-status/upload/i20', upload.single('file'), uploadI20);
 
 export default router;
