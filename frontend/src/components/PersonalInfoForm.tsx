@@ -1,27 +1,24 @@
-// src/components/PersonalInfoForm.tsx
-import { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useState, ChangeEvent, useEffect, useCallback } from "react";
+import axios from "axios";
+import { useAppSelector } from "../hooks";
 import {
   PersonalInfo,
-  NameInfo,
-  AddressInfo,
-  ContactInfo,
-  EmploymentInfo,
-  EmergencyContact,
   Document,
   ImmigrationInfo
 } from "../types";
 
-
-
 interface Props {
   initialData: PersonalInfo;
   onSubmit: (data: PersonalInfo) => void;
-  disabled?: boolean; 
+  disabled?: boolean;
 }
 
-export default function PersonalInfoForm({ initialData, onSubmit, disabled=false }: Props) {
+export default function PersonalInfoForm({ initialData, onSubmit, disabled = false }: Props) {
   const [draft, setDraft] = useState<PersonalInfo>(initialData);
   const [isEditing, setIsEditing] = useState(false);
+  const token = useAppSelector((state) => state.auth.token);
+  const userId = useAppSelector((state) => state.auth.id);
+
   useEffect(() => {
     setDraft(initialData);
   }, [initialData]);
@@ -32,52 +29,6 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
     setIsEditing(true);
   };
 
-
-  const handleIsResidentChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const isUS = e.target.value === "yes";
-    setDraft(prev => ({
-      ...prev,
-      immigration: {
-        // wipe out workAuth fields when switching back to resident
-        isUSResident: isUS,
-        residentStatus: isUS ? prev.immigration.residentStatus : undefined,
-        workAuthType: isUS ? undefined : prev.immigration.workAuthType,
-        otherVisaTitle: undefined,
-        optReceiptUrl: undefined,
-        authStartDate: undefined,
-        authEndDate: undefined,
-      }
-    }));
-  };
-
-
-  const handleImmigrationChange = (field: keyof ImmigrationInfo) =>
-  (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const value = e.target.type === "file"
-      ? undefined
-      : e.target.value;
-    setDraft(prev => ({
-      ...prev,
-      immigration: {
-        ...prev.immigration,
-        [field]: value,
-      } as any,
-    }));
-  };
-
-
-  const handleOptUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setDraft(prev => ({
-      ...prev,
-      immigration: {
-        ...prev.immigration,
-        optReceiptUrl: URL.createObjectURL(file),
-      }
-    }));
-  };
-  
   const cancelEdit = () => {
     if (window.confirm("Discard all changes?")) {
       setDraft(initialData);
@@ -85,13 +36,11 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
     }
   };
 
-  // Save: call parent and exit edit mode
   const saveEdit = () => {
     onSubmit(draft);
     setIsEditing(false);
   };
 
-  // Generic handler for nested fields
   const handleChange =
     <K extends keyof PersonalInfo>(section: K, field: string) =>
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -104,303 +53,256 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
       }));
     };
 
-  // Profile pic upload
-  const handlePicUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setDraft((prev) => ({
+  const handleIsResidentChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const isUS = e.target.value === "yes";
+    setDraft(prev => ({
       ...prev,
-      name: {
-        ...prev.name,
-        profilePicUrl: URL.createObjectURL(file),
-      },
+      immigration: {
+        isUSResident: isUS,
+        residentStatus: isUS ? prev.immigration.residentStatus : undefined,
+        workAuthType: isUS ? undefined : prev.immigration.workAuthType,
+        otherVisaTitle: "",
+        optReceiptUrl: "",
+        authStartDate: "",
+        authEndDate: "",
+      }
     }));
   };
 
-  // New document upload
-  const handleDocUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const newDoc: Document = {
-      id: `${Date.now()}`,
-      name: file.name,
-      url: URL.createObjectURL(file),
+  const handleImmigrationChange = (field: keyof ImmigrationInfo) =>
+    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const value = e.target.value;
+      setDraft(prev => ({
+        ...prev,
+        immigration: {
+          ...prev.immigration,
+          [field]: value,
+        } as any,
+      }));
     };
-    setDraft((prev) => ({
-      ...prev,
-      documents: [...prev.documents, newDoc],
-    }));
+
+  const handleOptUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId || !token) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('userId', userId);
+    formData.append('type', 'opt_receipt');
+
+    try {
+      const res = await axios.post(
+        'http://localhost:5001/api/documents/upload',
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      const uploaded = res.data.document;
+
+      setDraft((prev) => ({
+        ...prev,
+        immigration: {
+          ...prev.immigration,
+          optReceiptUrl: uploaded.url,
+        },
+      }));
+    } catch (err) {
+      console.error('OPT Upload failed', err);
+    }
   };
 
+  const handleDocUpload = (type: 'profile_picture' | 'driver_license' | 'work_auth') =>
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !userId || !token) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', userId);
+      formData.append('type', type);
+
+      try {
+        const res = await axios.post(
+          'http://localhost:5001/api/documents/upload',
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+
+        const newDoc = res.data.document;
+        setDraft((prev) => ({
+          ...prev,
+          documents: [...prev.documents, newDoc],
+        }));
+      } catch (err) {
+        console.error('Upload failed', err);
+      }
+    };
+
+    const deleteDoc = async (docId: string) => {
+      if (!token || !userId) return;
+      if (!window.confirm("Are you sure you want to delete this document?")) return;
+    
+      try {
+        await axios.delete(`http://localhost:5001/api/documents/${docId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        setDraft((prev) => ({
+          ...prev,
+          documents: prev.documents.filter((doc) => doc.id !== docId),
+        }));
+      } catch (err) {
+        console.error('Delete failed', err);
+      }
+    };
+
+  const previewDoc = useCallback(async (docId: string) => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/documents/preview/${docId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+      const blobUrl = window.URL.createObjectURL(res.data);
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      console.error('Preview failed', err);
+    }
+  }, [token]);
+
+  const downloadDoc = useCallback(async (docId: string, filename: string) => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/documents/download/${docId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Download failed', err);
+    }
+  }, [token]);
 
   return (
-
-    <div className="space-y-4">
-
-{/* <div className="flex space-x-2">
-        {(["all", "personal", "auth"] as ViewMode[]).map((mode) => {
-          // label mapping
-          const label =
-            mode === "all"
-              ? "All"
-              : mode === "personal"
-              ? "Personal Info"
-              : "Work Auth";
-          const isActive = viewMode === mode;
-          return (
-            <button
-              key={mode}
-              type="button"
-              className={`px-4 py-2 rounded ${
-                isActive
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div> */}
-
-
-    <form
-      onSubmit={(e: FormEvent) => {
-        e.preventDefault();
-        saveEdit();
-      }}
-      className="space-y-8 p-8 bg-gray-100 rounded"
-    >
-      {/* Header buttons */}
+    <form onSubmit={(e) => { e.preventDefault(); saveEdit(); }} className="space-y-8 p-8 bg-gray-100 rounded">
       <div className="flex justify-end space-x-2">
         {!isEditing ? (
-          <button
-            type="button"
-            onClick={startEdit}
-            disabled={disabled}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Edit
-          </button>
+          <button type="button" onClick={startEdit} disabled={disabled} className="px-4 py-2 bg-blue-600 text-white rounded">Edit</button>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="px-4 py-2 bg-gray-300 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded"
-            >
-              Save
-            </button>
+            <button type="button" onClick={cancelEdit} className="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+            <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded">Save</button>
           </>
         )}
       </div>
-      {/* Name Section */}
+
+      {/* Name section */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">Name</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(["firstName", "middleName", "lastName", "preferredName"] as const).map((field) => (
-            <div key={field}>
-              <label className="block text-sm capitalize">{field}</label>
-              <input
-                name={field}
-                value={draft.name[field]}
-                onChange={handleChange("name", field)}
-                disabled={!isEditing || disabled}
-                className="mt-1 w-full border rounded px-2 py-1"
-              />
-            </div>
-          ))}
-
-          {/* Profile picture */}
-          <div className="col-span-full">
-            <label className="block text-sm">Profile Picture</label>
-            {isEditing ? (
-              <input type="file" onChange={handlePicUpload} className="mt-1" />
-            ) : (
-              draft.name.profilePicUrl && (
-                <img
-                  src={draft.name.profilePicUrl}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full mt-2"
-                />
-              )
-            )}
-          </div>
-
-          {/* Email, SSN, DOB, Gender */}
-          <div>
-            <label className="block text-sm">Email</label>
+        {(["firstName", "middleName", "lastName", "preferredName", "email", "ssn", "dob", "gender"] as const).map((field) => (
+          <div key={field}>
+            <label className="block text-sm capitalize">{field}</label>
             <input
-              name="email"
-              type="email"
-              value={draft.name.email}
-              onChange={handleChange("name", "email")}
+              name={field}
+              value={draft.name[field]}
+              onChange={handleChange("name", field)}
               disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
-          <div>
-            <label className="block text-sm">SSN</label>
-            <input
-              name="ssn"
-              value={draft.name.ssn}
-              onChange={handleChange("name", "ssn")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">Date of Birth</label>
-            <input
-              name="dob"
-              type="date"
-              value={draft.name.dob}
-              onChange={handleChange("name", "dob")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">Gender</label>
-            <select
-              name="gender"
-              value={draft.name.gender}
-              onChange={handleChange("name", "gender")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            >
-              <option>Male</option>
-              <option>Female</option>
-              <option>Other</option>
-            </select>
-          </div>
-        </div>
+        ))}
       </fieldset>
 
-      {/* Address Section */}
+      {/* Address */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">Address</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(["building", "street", "city", "state", "zip"] as const).map((field) => (
-            <div key={field}>
-              <label className="block text-sm capitalize">{field}</label>
-              <input
-                name={field}
-                value={draft.address[field]}
-                onChange={handleChange("address", field)}
-                disabled={!isEditing || disabled}
-                className="mt-1 w-full border rounded px-2 py-1"
-              />
-            </div>
-          ))}
-        </div>
+        {(["building", "street", "city", "state", "zip"] as const).map((field) => (
+          <div key={field}>
+            <label className="block text-sm capitalize">{field}</label>
+            <input
+              name={field}
+              value={draft.address[field]}
+              onChange={handleChange("address", field)}
+              disabled={!isEditing || disabled}
+              className="mt-1 w-full border rounded px-2 py-1"
+            />
+          </div>
+        ))}
       </fieldset>
 
-      {/* Contact Info */}
+      {/* Contact */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Contact Info</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm">Cell Phone</label>
+        <legend className="text-lg font-semibold">Contact</legend>
+        {(["cell", "work"] as const).map((field) => (
+          <div key={field}>
+            <label className="block text-sm capitalize">{field}</label>
             <input
-              name="cell"
-              type="tel"
-              value={draft.contact.cell}
-              onChange={handleChange("contact", "cell")}
+              name={field}
+              value={draft.contact[field]}
+              onChange={handleChange("contact", field)}
               disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
-          <div>
-            <label className="block text-sm">Work Phone</label>
-            <input
-              name="work"
-              type="tel"
-              value={draft.contact.work}
-              onChange={handleChange("contact", "work")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-        </div>
+        ))}
       </fieldset>
 
       {/* Employment */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">Employment</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm">Visa Title</label>
+        {(["visaTitle", "startDate", "endDate"] as const).map((field) => (
+          <div key={field}>
+            <label className="block text-sm capitalize">{field}</label>
             <input
-              name="visaTitle"
-              value={draft.employment.visaTitle}
-              onChange={handleChange("employment", "visaTitle")}
+              name={field}
+              value={draft.employment[field]}
+              onChange={handleChange("employment", field)}
               disabled={!isEditing || disabled}
               className="mt-1 w-full border rounded px-2 py-1"
             />
           </div>
-          <div>
-            <label className="block text-sm">Start Date</label>
-            <input
-              name="startDate"
-              type="date"
-              value={draft.employment.startDate}
-              onChange={handleChange("employment", "startDate")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm">End Date</label>
-            <input
-              name="endDate"
-              type="date"
-              value={draft.employment.endDate}
-              onChange={handleChange("employment", "endDate")}
-              disabled={!isEditing || disabled}
-              className="mt-1 w-full border rounded px-2 py-1"
-            />
-          </div>
-        </div>
+        ))}
       </fieldset>
 
       {/* Emergency Contact */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
         <legend className="text-lg font-semibold">Emergency Contact</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(["firstName", "lastName", "phone", "email", "relationship"] as const).map((field) => (
-            <div key={field}>
-              <label className="block text-sm capitalize">{field}</label>
-              <input
-                name={field}
-                value={(draft.emergency as any)[field]}
-                onChange={handleChange("emergency", field)}
-                disabled={!isEditing || disabled}
-                className="mt-1 w-full border rounded px-2 py-1"
-              />
-            </div>
-          ))}
-        </div>
+        {(["firstName", "lastName", "phone", "email", "relationship"] as const).map((field) => (
+          <div key={field}>
+            <label className="block text-sm capitalize">{field}</label>
+            <input
+              name={field}
+              value={draft.emergency[field]}
+              onChange={handleChange("emergency", field)}
+              disabled={!isEditing || disabled}
+              className="mt-1 w-full border rounded px-2 py-1"
+            />
+          </div>
+        ))}
       </fieldset>
 
-
-
+      {/* Immigration */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">
-          U.S. Status & Work Authorization
-        </legend>
-
-        {/* 1. Are you a U.S. resident or citizen? */}
+        <legend className="text-lg font-semibold">U.S. Status & Work Authorization</legend>
         <div>
-          <label className="block text-sm font-medium">
-            Permanent resident or citizen of the U.S.?
-          </label>
+          <label className="block text-sm">U.S. Resident?</label>
           <select
             value={draft.immigration.isUSResident ? "yes" : "no"}
             onChange={handleIsResidentChange}
@@ -411,15 +313,11 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
             <option value="no">No</option>
           </select>
         </div>
-
         {draft.immigration.isUSResident ? (
-          /* if Yes → choose Green Card or Citizen */
           <div>
-            <label className="block text-sm font-medium">
-              Status
-            </label>
+            <label>Status</label>
             <select
-              value={draft.immigration.residentStatus}
+              value={draft.immigration.residentStatus || ""}
               onChange={handleImmigrationChange("residentStatus")}
               disabled={!isEditing}
               className="mt-1 w-full border rounded px-2 py-1"
@@ -429,14 +327,11 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
             </select>
           </div>
         ) : (
-          /* if No → work authorization flow */
           <>
             <div>
-              <label className="block text-sm font-medium">
-                What is your work authorization?
-              </label>
+              <label>Work Auth Type</label>
               <select
-                value={draft.immigration.workAuthType}
+                value={draft.immigration.workAuthType || ""}
                 onChange={handleImmigrationChange("workAuthType")}
                 disabled={!isEditing}
                 className="mt-1 w-full border rounded px-2 py-1"
@@ -448,39 +343,15 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
                 <option>Other</option>
               </select>
             </div>
-
-            {/* F1 → upload OPT receipt */}
             {draft.immigration.workAuthType === "F1" && (
               <div>
-                <label className="block text-sm font-medium">
-                  Upload OPT Receipt
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleOptUpload}
-                  disabled={!isEditing}
-                  className="mt-1"
-                />
-                {draft.immigration.optReceiptUrl && (
-                  <a
-                    href={draft.immigration.optReceiptUrl}
-                    target="_blank"
-                    rel="noopener"
-                    className="mt-2 inline-block underline"
-                  >
-                    Preview OPT Receipt
-                  </a>
-                )}
+                <label>OPT Receipt</label>
+                <input type="file" onChange={handleOptUpload} disabled={!isEditing} className="mt-1" />
               </div>
             )}
-
-            {/* Other → specify visa title */}
             {draft.immigration.workAuthType === "Other" && (
               <div>
-                <label className="block text-sm font-medium">
-                  Please specify visa title
-                </label>
+                <label>Other Visa Title</label>
                 <input
                   type="text"
                   value={draft.immigration.otherVisaTitle}
@@ -490,63 +361,41 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled=false
                 />
               </div>
             )}
-
-            {/* common start/end dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={draft.immigration.authStartDate}
-                  onChange={handleImmigrationChange("authStartDate")}
-                  disabled={!isEditing}
-                  className="mt-1 w-full border rounded px-2 py-1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={draft.immigration.authEndDate}
-                  onChange={handleImmigrationChange("authEndDate")}
-                  disabled={!isEditing}
-                  className="mt-1 w-full border rounded px-2 py-1"
-                />
-              </div>
-            </div>
           </>
         )}
       </fieldset>
-        
-            
+
       {/* Documents */}
       <fieldset className="bg-white p-6 rounded shadow space-y-4">
-        <legend className="text-lg font-semibold">Documents</legend>
-        <div className="space-y-2">
-          {draft.documents.map((doc) => (
-            <div key={doc.id} className="flex justify-between items-center">
-              <span>{doc.name}</span>
-              <div className="space-x-2">
-                <a href={doc.url} download className="underline">
-                  Download
-                </a>
-                <a href={doc.url} target="_blank" rel="noopener" className="underline">
-                  Preview
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-        {isEditing && (
-          <input type="file" onChange={handleDocUpload} className="mt-2" />
-        )}
-      </fieldset>
+        <legend className="text-lg font-semibold">Uploaded Documents</legend>
 
+        {['profile_picture', 'driver_license', 'work_auth'].map((category) => (
+          <div key={category} className="mb-4">
+            <label className="block font-medium capitalize">{category.replace('_', ' ')}</label>
+            {draft.documents
+              .filter((doc) => doc.type === category)
+              .map((doc) => (
+                <div key={doc.id} className="flex justify-between items-center">
+                  <span>{doc.name}</span>
+                  {isEditing && (
+                    <div className="space-x-2">
+                      <button onClick={() => previewDoc(doc.id)} className="text-blue-600 underline">Preview</button>
+                      <button onClick={() => downloadDoc(doc.id, doc.name)} className="text-blue-600 underline">Download</button>
+                      <button onClick={() => deleteDoc(doc.id)} className="text-red-500 underline">Delete</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            {isEditing && (
+              <input
+                type="file"
+                onChange={handleDocUpload(category as 'profile_picture' | 'driver_license' | 'work_auth')}
+                className="mt-2"
+              />
+            )}
+          </div>
+        ))}
+      </fieldset>
     </form>
-    </div>
   );
 }

@@ -56,8 +56,11 @@ const Register: React.FC = () => {
         ...values,
         token,
       });
-      dispatch(setAuthMessage('✅ Registration successful!'));
-      navigate('/signin');
+      dispatch(setAuthMessage('Registration successful! Now directing to Sign In page... '));
+      setTimeout(() => {
+        dispatch(setAuthMessage(''));
+        navigate('/signin');
+      }, 2000);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       dispatch(setAuthMessage('Registration failed.'));

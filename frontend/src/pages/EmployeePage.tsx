@@ -87,7 +87,6 @@ const EmployeeDashboard: React.FC = () => {
   };
 
   if (!info) return <div>Loading...</div>;
-  console.log("Initial data: ", info);
   return <AccountLayout initialData={info} onSubmit={handleUpdate} />;
 };
 

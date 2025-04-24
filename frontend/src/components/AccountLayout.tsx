@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import PersonalInfoForm from "./PersonalInfoForm";
 import VisaStatusPage from "./VisaStatus";
 import type { PersonalInfo } from "../types";
+import { useAppDispatch } from "../hooks";
+import { clearAuth } from "../store/authSlice";
 
 type ViewMode = "personal" | "visa";
 
@@ -15,10 +17,12 @@ interface Props {
 export default function AccountLayout({ initialData, onSubmit }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("personal");
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const handleLogout = () => {
-    // TODO: your logout logic (e.g. clear tokens)…
-    navigate("/login");
+    sessionStorage.clear(); 
+    dispatch(clearAuth());        
+    navigate("/signin");
   };
 
   return (

@@ -3,7 +3,7 @@ import path from 'path';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
 
-// Resolve __dirname in ES modules
+// Resolve `__dirname` in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
   },
 });
 
-// Optional: restrict allowed file types
+// Restrict allowed file types
 const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (
     file.mimetype.startsWith('image/') ||
@@ -39,16 +39,11 @@ const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterC
   }
 };
 
-// Multer upload middleware
-export const upload = multer({
+// Export multer middleware
+const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-// Optional: remove a file by filename
-export const deleteFile = (filePath: string): void => {
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-};
+export default upload;
