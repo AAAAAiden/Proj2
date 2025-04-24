@@ -74,7 +74,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
       <Content style={{ padding: "24px", background: "#f0f2f5" }}>
         <Row justify="center">
-          <Col xs={24} sm={22} md={20} lg={16} xl={12}>
+          <Col xs={24} sm={24} md={22} lg={20} xl={18}>
             <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
               {children}
             </Card>

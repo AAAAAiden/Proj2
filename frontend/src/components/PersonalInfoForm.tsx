@@ -10,7 +10,6 @@ import {
   Form,
   Input,
   Button,
-  Divider,
   Row,
   Col,
   Select,
@@ -38,10 +37,31 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
   const token = useAppSelector((state) => state.auth.token);
   const userId = useAppSelector((state) => state.auth.id);
   const email = useAppSelector((state) => state.auth.email);
+  const [profilePicBlobUrl, setProfilePicBlobUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     setDraft(initialData);
   }, [initialData]);
+  
+  useEffect(() => {
+    const profilePic = draft.documents.find(doc => doc.type === 'profile_picture');
+    if (!profilePic || !token) return;
+  
+    const fetchBlob = async () => {
+      try {
+        const res = await axios.get(profilePic.url, {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob',
+        });
+        const blobUrl = URL.createObjectURL(res.data);
+        setProfilePicBlobUrl(blobUrl);
+      } catch (err) {
+        console.error('Failed to load profile picture preview:', err);
+      }
+    };
+  
+    fetchBlob();
+  }, [draft.documents, token]);
 
   const startEdit = () => {
     if (disabled) return;
@@ -213,11 +233,14 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
       <Form.Item>
         <Row justify="space-between" align="middle">
           <Col>
-            <Avatar
-              size={80}
-              src={draft.documents.find(doc => doc.type === 'profile_picture')?.url}
-              icon={<UserOutlined />}
-            />
+          {(() => {
+            const profilePicUrl = draft.documents.find(doc => doc.type === 'profile_picture')?.url;
+            console.log("Resolved profilePicUrl:", profilePicUrl);
+            return ( <Avatar
+                size={80}
+                src={profilePicBlobUrl}
+                icon={!profilePicBlobUrl && <UserOutlined />}
+              /> );})()}
           </Col>
 
           <Col>
@@ -513,7 +536,7 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
           </Row>
         </Panel>
 
-      <Panel header="Documents" key='6'>
+      <Panel header="Documents" key='7'>
       <Row>
         <Col span={24}>
           <Space direction="vertical" style={{ width: '100%' }}>

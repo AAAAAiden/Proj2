@@ -3,7 +3,7 @@ import { checkToken, checkRole } from '../middleware/authMiddleware.js';
 
 // Employee controller
 import {
-  getProfile as getEmployeeById,
+  getProfile as getEmployeeById, getAllEmployees
 } from '../controller/employeeController.js';
 
 // Visa controller
@@ -24,6 +24,8 @@ import {
 const router = Router();
 
 router.use(checkToken, checkRole(['hr']));
+
+router.get('/employees', getAllEmployees);
 
 router.get('/employees/:id', getEmployeeById);
 

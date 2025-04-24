@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { sendRegistrationEmail } from '../util/emailService.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { IUserDocument } from '../model/User.js';
+import Employee from '../model/Employee.js';
 
 // Employee: Submit onboarding application
 export const submitOnboarding = async (req: Request, res: Response): Promise<any> => {
@@ -74,7 +75,7 @@ export const getOnboardingStatus = async (req: AuthRequest, res: Response): Prom
 };
 
 // HR: Approve onboarding
-export const approveOnboarding = async (req: Request, res: Response): Promise<any> => {
+export const approveOnboarding = async (req: Request, res: Response): Promise<void> => {
   const { userId } = req.body;
 
   try {
@@ -85,12 +86,76 @@ export const approveOnboarding = async (req: Request, res: Response): Promise<an
     );
 
     if (!app) {
-      return res.status(404).json({ message: 'No pending application found' });
+      res.status(404).json({ message: 'No pending application found' });
+      return;
     }
 
-    res.json({ message: 'Application approved', application: app });
+    const form = app.formData;
+    if (!form || !form.name || !form.address || !form.contact) {
+      res.status(400).json({ message: 'Incomplete form data' });
+      return;
+    }
+
+    // Map documents with safe defaults
+    const documents = Array.isArray(form.documents)
+      ? form.documents
+          .filter((doc: any) => doc?.name && doc?.url)
+          .map((doc: any) => ({
+            type: doc.type,
+            filename: doc.name,
+            path: doc.url, // Use url as path for now
+          }))
+      : [];
+
+    // Create Employee document
+    const newEmployee = new Employee({
+      userId: app.userId,
+      name: {
+        firstName: form.name.firstName || '',
+        lastName: form.name.lastName || '',
+        middleName: form.name.middleName || '',
+        preferredName: form.name.preferredName || '',
+        email: form.name.email || ''
+      },
+      profilePicture: form.name.profilePicUrl || '',
+      contactInfo: {
+        cellPhone: form.contact.cell || '',
+        workPhone: form.contact.work || '',
+      },
+      address: {
+        building: form.address.building || '',
+        street: form.address.street || '',
+        city: form.address.city || '',
+        state: form.address.state || '',
+        zip: form.address.zip || '',
+      },
+      ssn: form.name.ssn || '',
+      dateOfBirth: form.name.dob || '',
+      gender: form.name.gender || 'prefer_not_to_say',
+      workAuth: {
+        citizenshipStatus: form.immigration?.isUSResident ? 'Citizen' : 'Visa',
+        visaTitle: form.employment?.visaTitle || '',
+        visaType: form.immigration?.workAuthType || '',
+        otherTitle: form.immigration?.otherVisaTitle || '',
+        startDate: form.immigration?.authStartDate || '',
+        endDate: form.immigration?.authEndDate || '',
+        optReceiptPath: form.immigration?.optReceiptUrl || '',
+      },
+      reference: form.references,
+      emergencyContacts: [form.emergency],
+      documents,
+    });
+
+    await newEmployee.save();
+
+    res.status(201).json({
+      message: 'Application approved and employee created',
+      application: app,
+      employee: newEmployee,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to approve application', error });
+    console.error('Approval error:', error);
+    res.status(500).json({ message: 'Failed to approve and create employee', error });
   }
 };
 
