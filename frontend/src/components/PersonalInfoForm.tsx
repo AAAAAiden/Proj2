@@ -39,6 +39,13 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
   const email = useAppSelector((state) => state.auth.email);
   const [profilePicBlobUrl, setProfilePicBlobUrl] = useState<string | undefined>(undefined);
 
+
+  const [form] = Form.useForm<PersonalInfo>();
+
+  useEffect(() => {
+    form.resetFields();
+  }, [initialData, form]);
+
   useEffect(() => {
     setDraft(prev => {
       // copy existing docs
@@ -239,8 +246,9 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
     }
   }, [token]);
 
+
   return (
-    <Form layout="vertical" onFinish={saveEdit} style={{ background: "#fff", padding: 24, borderRadius: 8 }}>
+    <Form form={form}  layout="vertical" onFinish={saveEdit} style={{ background: "#fff", padding: 24, borderRadius: 8 }}>
       <Form.Item>
         <Row justify="space-between" align="middle">
           <Col>
@@ -277,7 +285,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
         <Panel header="Name & Contact" key="1">
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
-              <Form.Item label="First Name">
+              <Form.Item label="First Name"
+              name={['name','firstName']} 
+               rules={[{ required: true, message: 'First name is required' }]}
+              >
                 <Input
                   value={draft.name.firstName}
                   disabled={!isEditing || disabled}
@@ -286,7 +297,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item label="Last Name">
+              <Form.Item label="Last Name"
+              name={['name','lastName']} 
+                rules={[{ required: true, message: 'Last name is required' }]}
+              >
                 <Input
                   value={draft.name.lastName}
                   disabled={!isEditing || disabled}
@@ -304,7 +318,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item label="Cell Phone">
+              <Form.Item label="Cell Phone"
+              name={['name','cellPhone']} 
+                rules={[{ required: true, message: 'Cell phone is required' }]}
+              >
                 <Input
                   value={draft.contact.cell}
                   disabled={!isEditing || disabled}
@@ -322,7 +339,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24}>
-              <Form.Item label="Email">
+              <Form.Item label="Email"
+              name={['name','email']} 
+                rules={[{ required: true, message: 'Email is required' }]}
+              >
                 <Input value={email} disabled readOnly />
               </Form.Item>
             </Col>
@@ -341,7 +361,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
-            <Form.Item label="Street Name">
+            <Form.Item label="Street Name"
+            name={['address','street']} 
+              rules={[{ required: true, message: 'Street name is required' }]}
+            >
               <Input
                 value={draft.address.street}
                 disabled={!isEditing}
@@ -350,7 +373,9 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}>
-            <Form.Item label="City">
+            <Form.Item label="City"
+            name={['address','city']} 
+              rules={[{ required: true, message: 'City is required' }]}>
               <Input
                 value={draft.address.city}
                 disabled={!isEditing}
@@ -359,7 +384,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
             </Form.Item>
           </Col>
           <Col xs={12} sm={8}>
-            <Form.Item label="State">
+            <Form.Item label="State"
+            name={['address','state']} 
+              rules={[{ required: true, message: 'State is required' }]}
+            >
               <Input
                 value={draft.address.state}
                 disabled={!isEditing}
@@ -368,7 +396,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
             </Form.Item>
           </Col>
           <Col xs={12} sm={8}>
-            <Form.Item label="Zip Code">
+            <Form.Item label="Zip Code"
+            name={['address','zipcode']} 
+              rules={[{ required: true, message: 'Zip code is required' }]}
+            >
               <Input
                 value={draft.address.zip}
                 disabled={!isEditing}
@@ -382,7 +413,29 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
         <Panel header="Personal Info" key='3'>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={24}>
-            <Form.Item label="SSN">
+            <Form.Item label="SSN"
+            name={['personal','SSN']} 
+              rules={[{ required: true, message: 'SSN is required' },
+                {
+                  pattern: /^\d{3}-\d{2}-\d{4}$/,
+                  message: 'wrong SSN format',
+                },
+                
+              ]}
+
+              normalize={(value: string) => {
+                if (!value) return value;
+                const digits = value.replace(/\D/g, '').slice(0, 9);
+            
+                if (digits.length <= 3) {
+                  return digits;
+                } else if (digits.length <= 5) {
+                  return `${digits.slice(0,3)}-${digits.slice(3)}`;
+                } else {
+                  return `${digits.slice(0,3)}-${digits.slice(3,5)}-${digits.slice(5)}`;
+                }
+              }}
+            >
               <Input
                 value={draft.name.ssn}
                 disabled={!isEditing}
@@ -392,7 +445,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
           </Col>
 
           <Col xs={24} sm={8}>
-            <Form.Item label="Date of Birth">
+            <Form.Item label="Date of Birth"
+            name={['personal','DateBirth']} 
+              rules={[{ required: true, message: 'Date of birth is required' }]}
+            >
               <Input
                 type="date"
                 value={draft.name.dob}
@@ -403,7 +459,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
           </Col>
 
           <Col xs={24} sm={8}>
-            <Form.Item label="Gender">
+            <Form.Item label="Gender"
+            name={['personal','gender']} 
+              rules={[{ required: true, message: 'gender is required' }]}
+            >
               <Select
                 value={draft.name.gender}
                 disabled={!isEditing}
@@ -427,7 +486,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
       <Panel header="U.S. Status & Work Authorization" key='4'>
       <Row gutter={[16,16]}>
         <Col xs={24} sm={12}>
-          <Form.Item label="Resident Status">
+          <Form.Item label="Resident Status"
+          name={['personal','residentStatus']} 
+            rules={[{ required: true, message: 'Resident status is required' }]}
+          >
             <Select value={draft.immigration.isUSResident ? 'yes' : 'no'} onChange={(v) => handleIsResidentChange({ target: { value: v } } as any)} disabled={!isEditing}>
               <Option value="yes">Yes</Option>
               <Option value="no">No</Option>
@@ -436,7 +498,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
         </Col>
         {!draft.immigration.isUSResident && (
           <Col xs={24} sm={12}>
-            <Form.Item label="Work Authorization">
+            <Form.Item label="Work Authorization"
+            name={['personal','workAuthType']} 
+              rules={[{ required: true, message: 'Work authorization is required' }]}
+            >
               <Select value={draft.immigration.workAuthType} onChange={(v) => handleImmigrationChange("workAuthType")({ target: { value: v } } as any)} disabled={!isEditing}>
                 <Option value="H1-B">H1-B</Option>
                 <Option value="L2">L2</Option>
@@ -470,7 +535,9 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
       <Panel header="References" key="5">
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
-              <Form.Item label="First Name">
+              <Form.Item label="First Name"
+                rules={[{ required: true, message: 'First name is required' }]}
+              >
                 <Input value={draft.references.firstName} disabled={!isEditing} onChange={handleChange("references", "firstName")} />
               </Form.Item>
             </Col>
@@ -485,7 +552,9 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item label="Email">
+              <Form.Item label="Email"
+                rules={[{type: 'email', message: 'Please enter a valid email address'}]}
+              >
                 <Input value={draft.references.email} disabled={!isEditing} onChange={handleChange("references", "email")} />
               </Form.Item>
             </Col>
@@ -500,7 +569,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
         <Panel header="Emergency Contact" key="6">
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
-              <Form.Item label="First Name">
+              <Form.Item label="First Name"
+              name={['Emergency','firstName']} 
+                rules={[{ required: true, message: 'First name is required' }]}
+              >
                 <Input
                   value={draft.emergency.firstName}
                   disabled={!isEditing}
@@ -509,7 +581,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item label="Last Name">
+              <Form.Item label="Last Name"
+              name={['Emergency','lastName']} 
+                rules={[{ required: true, message: 'Last name is required' }]}
+              >
                 <Input
                   value={draft.emergency.lastName}
                   disabled={!isEditing}
@@ -518,7 +593,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item label="Phone">
+              <Form.Item label="Phone"
+              name={['Emergency','phone']} 
+                rules={[{ required: true, message: 'Phone number is required' }]}
+              >
                 <Input
                   value={draft.emergency.phone}
                   disabled={!isEditing}
@@ -527,7 +605,13 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item label="Email">
+              <Form.Item label="Email"
+              name={['Emergency','email']} 
+                rules={[{ required: true, message: 'Email is required' },
+               {type: 'email', message: 'Please enter a valid email address'}
+                ]}
+
+              >
                 <Input
                   value={draft.emergency.email}
                   disabled={!isEditing}
@@ -536,7 +620,10 @@ export default function PersonalInfoForm({ initialData, onSubmit, disabled = fal
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item label="Relationship">
+              <Form.Item label="Relationship"
+              name={['Emergency','relationship']} 
+                rules={[{ required: true, message: 'Relationship is required' }]}
+              >
                 <Input
                   value={draft.emergency.relationship}
                   disabled={!isEditing}
