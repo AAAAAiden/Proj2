@@ -28,7 +28,7 @@ export const getAllEmployees = async (req: Request, res: Response): Promise<void
       ssn: 1,
       'contactInfo.cellPhone': 1,
       'contactInfo.workPhone': 1,
-      'workAuth.visaTitle': 1,
+      'workAuth.visaType': 1,
     });
 
     const mapped = employees.map(emp => ({
@@ -43,7 +43,7 @@ export const getAllEmployees = async (req: Request, res: Response): Promise<void
         work: emp.contactInfo?.workPhone || '',
       },
       employment: {
-        visaTitle: emp.workAuth?.visaTitle || '',
+        visaType: emp.workAuth?.visaType || '',
       },
       email: emp.name.email || '',
       ssn: emp.ssn || '',

@@ -45,7 +45,7 @@ const EmployeeProfilesPage: React.FC = () => {
       const sorted = res.data.sort((a: EmployeeSummary, b: EmployeeSummary) =>
         a.name.lastName.localeCompare(b.name.lastName)
       );
-      console.log('Fetched employees:', res.data);
+      console.log(res.data);
       setEmployees(sorted);
       setFiltered(sorted);
     } catch (err) {
@@ -86,7 +86,7 @@ const EmployeeProfilesPage: React.FC = () => {
       )
     },
     { title: 'SSN', dataIndex: 'ssn', key: 'ssn' },
-    { title: 'Work Auth', dataIndex: ['employment', 'visaTitle'], key: 'visaTitle' },
+    { title: 'Work Auth', dataIndex: ['employment', 'visaType'], key: 'visaType' },
     { title: 'Phone', dataIndex: ['contact', 'cell'], key: 'phone' },
     { title: 'Email', dataIndex: 'email', key: 'email' }
   ];
