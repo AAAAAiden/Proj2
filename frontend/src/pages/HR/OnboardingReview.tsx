@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Card, Button, Tabs, Spin } from 'antd';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { setAuthMessage } from '../../store/authSlice';
 import GlobalMessageBanner from '../../components/GlobalMessageBanner';
+import MainLayout from '../../components/MainLayout';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { hrNavItems, handleHRNavClick, hrPathToNavKey } from '../../utils/hrNavigation';
 
 const { Title } = Typography;
 const { TabPane } = Tabs;
@@ -23,6 +25,9 @@ const OnboardingReview: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.token);
+  const location = useLocation();
+  const selectedKey = hrPathToNavKey[location.pathname] || '';
+
   const fetchApplications = async (status: 'pending' | 'rejected' | 'approved') => {
     setLoading(true);
     try {
@@ -46,14 +51,21 @@ const OnboardingReview: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchApplications(activeTab);
-  }, [activeTab]);
+    dispatch(setAuthMessage(''));  
+    fetchApplications(activeTab); 
+  }, [activeTab, dispatch]);
 
   const handleView = (userId: string) => {
     window.open(`/hr/view-application/${userId}`, '_blank');
   };
 
   return (
+    < MainLayout
+    title="HR Home Page"
+    navItems={hrNavItems}
+    selectedKey={selectedKey}
+    onNavClick={handleHRNavClick(navigate)} >
+
     <div style={{ padding: '40px' }}>
       <Title level={2}>Onboarding Applications</Title>
       <GlobalMessageBanner />
@@ -77,6 +89,7 @@ const OnboardingReview: React.FC = () => {
         ))}
       </Tabs>
     </div>
+    </MainLayout>
   );
 };
 

@@ -42,6 +42,7 @@ export interface NameInfo {
     id: string;
     name: string;
     url: string;
+    type: 'profile_picture' | 'driver_license' | 'work_auth' | 'opt_receipt' | 'opt_ead' | 'i983' | 'i20' | 'other';
   }
 
   export interface ImmigrationInfo {

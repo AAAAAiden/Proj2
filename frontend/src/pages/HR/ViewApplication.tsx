@@ -26,6 +26,7 @@ interface ApplicationDetails {
       id: string;
       name: string;
       url: string;
+      type: string;
     }[];
     immigration?: {
       isUSResident: boolean;
@@ -47,6 +48,48 @@ const ViewApplication: React.FC = () => {
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.token);
   const authLoaded = useAppSelector((state) => state.auth.authLoaded);
+  
+  const previewDocument = async (docId: string) => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/documents/preview/${docId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob',
+      });
+      const blobUrl = window.URL.createObjectURL(res.data);
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      console.error('Preview failed', err);
+      dispatch(setAuthMessage('Failed to preview document'));
+    }
+  };
+  
+  const downloadDocument = async (docId: string, filename: string) => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/documents/download/${docId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Download failed', err);
+      dispatch(setAuthMessage('Failed to download document'));
+    }
+  };
+
+
+  useEffect(() => {
+    dispatch(setAuthMessage(''));  
+  }, [dispatch]);
 
   useEffect(() => {
     if (!authLoaded || !token || !userId) return;
@@ -162,19 +205,37 @@ const ViewApplication: React.FC = () => {
         {application.documents.length > 0 && (
         <>
             <Title level={4}>Uploaded Documents</Title>
-            {application.documents.map((doc) => (
-            <Paragraph key={doc.id}>
-                {doc.name} — 
-                <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
-                Preview
-                </a> | 
-                <a href={doc.url} download style={{ marginLeft: 8 }}>
-                Download
-                </a>
-            </Paragraph>
+            {['profile_picture', 'driver_license', 'work_auth'].map((category) => (
+            <div key={category} style={{ marginBottom: '20px' }}>
+                <Paragraph strong style={{ marginBottom: 4 }}>
+                {category.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </Paragraph>
+                {application.documents
+                .filter(doc => doc.type === category)
+                .map((doc) => (
+                    <Paragraph key={doc.id}>
+                    {doc.name} —
+                    <button
+                        onClick={() => previewDocument(doc.id)}
+                        className="text-blue-600 underline bg-none border-none cursor-pointer ml-2"
+                    >
+                        Preview
+                    </button>
+                    |
+                    <button
+                        onClick={() => downloadDocument(doc.id, doc.name)}
+                        className="text-blue-600 underline bg-none border-none cursor-pointer ml-2"
+                    >
+                        Download
+                    </button>
+                    </Paragraph>
+                ))}
+            </div>
             ))}
         </>
-        )}  
+        )}
+
+        
         {application.immigration && (
         <>
             <Title level={4}>U.S. Status & Work Authorization</Title>
@@ -213,6 +274,15 @@ const ViewApplication: React.FC = () => {
             )}
         </>
         )}
+
+      {application.status === 'approved' && (
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <Button type="default" onClick={() => window.location.href = '/hr/review'}>
+            Return to Review Page
+            </Button>
+        </div>
+      )}
+
       {application.status === 'rejected' && application.feedback && (
         <Paragraph><b>Feedback:</b> {application.feedback}</Paragraph>
       )}
